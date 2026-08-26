@@ -4,7 +4,7 @@
 
   # cardify
 
-  **Современный, приватный и 100% автономный кошелек дисконтных и бонусных карт для Android.**
+  **A modern, private, and 100% offline loyalty & discount card wallet for Android.**
 
   [![Kotlin](https://img.shields.io/badge/Kotlin-2.0.21-7F52FF.svg?style=flat&logo=kotlin)](https://kotlinlang.org)
   [![Android SDK](https://img.shields.io/badge/Min%20SDK-26%20(Android%208.0%2B)-3DDC84.svg?style=flat&logo=android)](https://developer.android.com)
@@ -15,72 +15,71 @@
 
 ---
 
-## 📱 О проекте
+## 📱 About
 
-**cardify** — это стильное приложение для Android, позволяющее оцифровать и хранить все ваши скидочные, дисконтные и клубные карты в одном месте. 
+**cardify** is a sleek, privacy-first Android application designed to digitize and store all your loyalty cards, discount cards, and membership passes in one place.
 
-Приложение работает **100% оффлайн**, не требует регистрации, не собирает аналитику и хранит данные исключительно на устройстве пользователя.
-
----
-
-## ✨ Основные возможности
-
-- 💳 **Добавление и кастомизация карт**: сохранение номеров, названий магазинов, заметок, выбор из палитры градиентных цветов и категорий.
-- ⚡ **Кассовый полноэкранный режим (POS Barcode Mode)**:
-  - При клике по штрихкоду открывается полноэкранный вид, повернутый на 90°.
-  - Автоматически устанавливает 100% яркость экрана для мгновенного считывания любыми сканерами на кассе.
-- 📷 **Быстрый сканер штрихкодов**: интеграция **CameraX** и **Google ML Kit** для моментального сканирования любых 1D и 2D кодов (EAN-13, EAN-8, QR Code, Code 128, ITF, Code 39 и др.).
-- 🏷️ **Кастомные и системные категории**: фильтрация карт с помощью интерактивных чипов категорий (Супермаркеты, АЗС, Рестораны, Одежда, Электроника и др.).
-- 🔒 **Безопасность и приватность**:
-  - Блокировка приложения через **Biometric API** (отпечаток пальца / Face Unlock) с настраиваемым тайм-аутом.
-  - Защита от снимков экрана (`FLAG_SECURE`) в меню недавних приложений.
-- 💾 **Резервное копирование**: локальный экспорт и импорт всей базы карт в формате JSON.
-- 🎨 **Material 3 & Material You**:
-  - Динамическая цветовая гамма, поддержка тёмной и светлой темы.
-  - Плавные пружинные анимации (Spring Physics) и отклик (Haptic Feedback).
-- 🚀 **Анимированный Splash Screen**: нативный стартовый экран Android 12+ с упругой векторной анимацией исчезновения.
+Built with modern Android development standards, **cardify** is **100% offline**, requires no account registration, tracks zero analytics, and keeps all your data strictly on your device.
 
 ---
 
-## 🛠 Стек технологий
+## ✨ Features
 
-- **Язык**: [Kotlin 2.0](https://kotlinlang.org/)
-- **UI Framework**: [Jetpack Compose](https://developer.android.com/jetpack/compose) (Material 3 Expressive Design)
-- **Архитектура**: Clean Architecture + MVVM (StateFlow, Coroutines)
-- **База данных**: [Room ORM](https://developer.android.com/training/data-storage/room) (SQLite)
-- **Камера и Штрихкоды**:
-  - [CameraX](https://developer.android.com/training/camerax) — управление камерой
-  - [Google ML Kit Barcode Scanning](https://developers.google.com/ml-kit/vision/barcode-scanning) — распознавание штрихкодов
-  - [ZXing Core](https://github.com/zxing/zxing) — векторная генерация штрихкодов
-- **Загрузка изображений**: [Coil Compose](https://coil-kt.github.io/coil/)
-- **Безопасность**: AndroidX Biometric
-- **Сборщик**: Gradle (KSP, Version Catalogs `libs.versions.toml`)
+- 💳 **Card Customization & Organization**: Easily add and personalize cards with store names, custom color palettes, notes, and categories.
+- ⚡ **POS Barcode Mode (Fullscreen Checkout View)**:
+  - Tapping any barcode opens a 90°-rotated, full-screen vertical barcode view.
+  - Automatically overrides screen brightness to **100%** for instant, hassle-free scanning at store checkouts.
+- 📷 **Real-time Camera Scanner**: Integrated with **CameraX** and **Google ML Kit** for fast detection of all 1D and 2D barcodes (EAN-13, EAN-8, QR Code, Code 128, ITF, Code 39, etc.).
+- 🏷️ **Custom & Preset Categories**: Organize cards with interactive filter chips (Supermarkets, Gas Stations, Restaurants, Clothing, Electronics, Custom user categories).
+- 🔒 **Privacy & Biometric Protection**:
+  - Secure the app using **Biometric API** (Fingerprint / Face Unlock) with customizable inactivity lock timeouts.
+  - Optional **FLAG_SECURE** window protection to prevent screenshots and app switcher previews.
+- 💾 **Local Data Backup & Restore**: Export and import your card database to/from JSON files locally without third-party servers.
+- 🎨 **Material 3 Expressive UI**:
+  - Dynamic Color (Material You) support, full Light/Dark mode, spring-based animations, and crisp haptic feedback.
+- 🚀 **Animated Splash Screen**: Native Android 12+ SplashScreen with a smooth vector scale & fade exit transition.
 
 ---
 
-## 🚀 Инструкция по сборке и запуску
+## 🛠 Tech Stack
 
-### Требования:
-- **Android Studio**: Ladybug (2024.2.1) или новее
+- **Language**: [Kotlin 2.0](https://kotlinlang.org/)
+- **UI Framework**: [Jetpack Compose](https://developer.android.com/jetpack/compose) with Material 3 Expressive Design
+- **Architecture**: Clean Architecture / MVVM (StateFlow, Kotlin Coroutines)
+- **Local Storage**: [Room ORM](https://developer.android.com/training/data-storage/room) (SQLite)
+- **Camera & Barcode Processing**:
+  - [CameraX](https://developer.android.com/training/camerax) — Camera management
+  - [Google ML Kit Barcode Scanning](https://developers.google.com/ml-kit/vision/barcode-scanning) — Real-time barcode detection
+  - [ZXing Core](https://github.com/zxing/zxing) — High-precision barcode image rendering
+- **Image Loading**: [Coil Compose](https://coil-kt.github.io/coil/)
+- **Security**: AndroidX Biometric + Window FLAG_SECURE
+- **Build System**: Gradle with Kotlin DSL, KSP, and Version Catalogs (`libs.versions.toml`)
+
+---
+
+## 🚀 Building & Running
+
+### Prerequisites
+- **Android Studio**: Ladybug (2024.2.1) or newer
 - **JDK**: 21
 - **Android SDK**: Compile SDK 35, Min SDK 26 (Android 8.0+)
 
-### Шаги по установке:
+### Setup Instructions
 
-1. **Клонируйте репозиторий**:
+1. **Clone the repository**:
    ```bash
    git clone https://github.com/your-username/cardify.git
    cd cardify
    ```
 
-2. **Настройте локальную конфигурацию**:
-   Скопируйте `local.properties.example` в `local.properties` и укажите путь к Android SDK (если необходимо):
+2. **Configure Local Environment**:
+   Copy `local.properties.example` to `local.properties` and verify your Android SDK path:
    ```bash
    cp local.properties.example local.properties
    ```
 
-3. **Соберите проект**:
-   - **Linux / macOS**:
+3. **Build the Debug APK**:
+   - **macOS / Linux**:
      ```bash
      ./gradlew assembleDebug
      ```
@@ -89,21 +88,21 @@
      .\gradlew.bat assembleDebug
      ```
 
-4. **Установка на устройство или эмулятор**:
+4. **Install on connected device or emulator**:
    ```bash
    ./gradlew installDebug
    ```
 
 ---
 
-## 📋 Чек-лист перед публикацией на GitHub
+## 📋 Pre-publication Checklist for GitHub
 
-1. ✅ **Проверка `.gitignore`**: убедитесь, что сборка `build/`, папка `.idea/` и `local.properties` не попадают в коммиты.
-2. ✅ **Отсутствие приватных данных**: убедитесь, что в репозитории нет личных API-ключей или keystore файлов от подписи релизов.
-3. 📄 **Лицензия**: добавьте файл `LICENSE` (например, MIT или Apache 2.0).
+1. ✅ **Verified `.gitignore`**: Ensure `build/`, `.idea/`, and `local.properties` are excluded.
+2. ✅ **No Hardcoded Secrets**: Project runs 100% locally and contains zero API keys or signing secrets.
+3. 📄 **License**: Includes the [MIT License](LICENSE) for open-source distribution.
 
 ---
 
-## 📄 Лицензия
+## 📄 License
 
-Проект распространяется под лицензией **MIT**. Подробности в файле [LICENSE](LICENSE).
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
