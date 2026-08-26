@@ -129,26 +129,6 @@ fun BarcodeDisplay(
                     )
                 }
             }
-
-            if (onClick != null && !isLoading && bitmap != null) {
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = Color.Black.copy(alpha = 0.05f),
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .size(28.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Outlined.Fullscreen,
-                            contentDescription = "Full Screen",
-                            tint = Color.Black.copy(alpha = 0.5f),
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-            }
         }
     }
 }
