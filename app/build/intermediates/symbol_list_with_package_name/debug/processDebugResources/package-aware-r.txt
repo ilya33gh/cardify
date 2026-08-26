@@ -697,6 +697,7 @@ drawable fingerprint_dialog_error
 drawable fingerprint_dialog_fp_icon
 drawable googleg_disabled_color_18
 drawable googleg_standard_color_18
+drawable ic_app_logo
 drawable ic_call_answer
 drawable ic_call_answer_low
 drawable ic_call_answer_video

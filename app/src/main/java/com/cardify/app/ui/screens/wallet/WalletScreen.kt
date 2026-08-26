@@ -63,6 +63,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -365,7 +366,7 @@ fun WalletScreen(
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
-                                        imageVector = Icons.Outlined.AccountBalanceWallet,
+                                        painter = painterResource(R.drawable.ic_app_logo),
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.onPrimary,
                                         modifier = Modifier.size(24.dp)
@@ -374,7 +375,7 @@ fun WalletScreen(
                             }
 
                             Text(
-                                text = stringResource(R.string.app_name),
+                                text = "cardify",
                                 style = MaterialTheme.typography.headlineMedium.copy(
                                     fontFamily = SpaceGroteskFamily,
                                     fontWeight = FontWeight.Black,
@@ -446,20 +447,40 @@ fun WalletScreen(
                                 .padding(horizontal = 4.dp, vertical = 8.dp * titleFraction),
                             contentAlignment = Alignment.CenterStart
                         ) {
-                            Text(
-                                text = stringResource(R.string.app_name),
-                                style = MaterialTheme.typography.displayMedium.copy(
-                                    fontFamily = SpaceGroteskFamily,
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = (44 * titleFraction).coerceAtLeast(22f).sp,
-                                    letterSpacing = (-1.0).sp
-                                ),
-                                color = MaterialTheme.colorScheme.onSurface.copy(
-                                    alpha = titleFraction.coerceIn(0f, 1f)
-                                ),
-                                maxLines = 1,
-                                softWrap = false
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Surface(
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size((46 * titleFraction).coerceAtLeast(26f).dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.ic_app_logo),
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onPrimary,
+                                            modifier = Modifier.size((26 * titleFraction).coerceAtLeast(16f).dp)
+                                        )
+                                    }
+                                }
+
+                                Text(
+                                    text = "cardify",
+                                    style = MaterialTheme.typography.displayMedium.copy(
+                                        fontFamily = SpaceGroteskFamily,
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = (44 * titleFraction).coerceAtLeast(22f).sp,
+                                        letterSpacing = (-1.0).sp
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurface.copy(
+                                        alpha = titleFraction.coerceIn(0f, 1f)
+                                    ),
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
                         }
                     }
                 }

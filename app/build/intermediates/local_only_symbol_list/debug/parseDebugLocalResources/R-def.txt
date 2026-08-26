@@ -5,6 +5,7 @@ array com_google_android_gms_fonts_certs_dev
 array com_google_android_gms_fonts_certs_prod
 color ic_launcher_background
 color primary
+drawable ic_app_logo
 drawable ic_launcher_foreground
 drawable ic_launcher_monochrome
 font space_grotesk
