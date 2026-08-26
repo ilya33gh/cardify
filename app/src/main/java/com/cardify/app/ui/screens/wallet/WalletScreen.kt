@@ -1205,7 +1205,8 @@ fun WalletScreen(
             card = card,
             onDismiss = { viewModel.onDismissCardDetail() },
             onEditCard = onNavigateToEditCard,
-            onDeleteCard = { viewModel.onDeleteCard(it) }
+            onDeleteCard = { viewModel.onDeleteCard(it) },
+            onToggleFavorite = { viewModel.onToggleFavorite(card) }
         )
     }
 

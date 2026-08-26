@@ -152,49 +152,73 @@ fun ExpressiveLoyaltyCard(
                 .fillMaxWidth()
                 .padding(20.dp)
         ) {
-            // 1. Top Header: Minimal Google Pay Monogram Badge + Category Pill
+            // 1. Top Header: Minimal Google Pay Monogram Badge + Category Pill (Left) + Favorite Squircle (Right)
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Brand Monogram Circle
-                Surface(
-                    shape = CircleShape,
-                    color = Color.Black.copy(alpha = 0.22f),
-                    contentColor = Color.White,
-                    modifier = Modifier.size(36.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = storeInitial,
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontFamily = InterFamily,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 17.sp
+                    // Brand Monogram Circle
+                    Surface(
+                        shape = CircleShape,
+                        color = Color.Black.copy(alpha = 0.22f),
+                        contentColor = Color.White,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = storeInitial,
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontFamily = InterFamily,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 17.sp
+                                )
                             )
-                        )
+                        }
+                    }
+
+                    if (!card.categoryName.isNullOrBlank()) {
+                        Surface(
+                            shape = PillShape,
+                            color = Color.Black.copy(alpha = 0.18f),
+                            contentColor = Color.White
+                        ) {
+                            Text(
+                                text = card.categoryName,
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontFamily = InterFamily,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 13.sp
+                                ),
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 }
 
-                if (!card.categoryName.isNullOrBlank()) {
+                // Favorite Squircle Indicator (Settings style)
+                if (card.isFavorite) {
                     Surface(
-                        shape = PillShape,
-                        color = Color.Black.copy(alpha = 0.18f),
-                        contentColor = Color.White
+                        shape = SquircleShape,
+                        color = Color.Black.copy(alpha = 0.22f),
+                        contentColor = Color.White,
+                        modifier = Modifier.size(34.dp)
                     ) {
-                        Text(
-                            text = card.categoryName,
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                fontFamily = InterFamily,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 13.sp
-                            ),
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Filled.Favorite,
+                                contentDescription = "Favorite",
+                                tint = ExpressivePink,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -379,20 +403,42 @@ fun ExpressiveLoyaltyCardRow(
                 )
             }
 
-            Surface(
-                shape = PillShape,
-                color = MaterialTheme.colorScheme.surfaceContainerHigh
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text = card.barcodeFormat.displayName,
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontFamily = InterFamily,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 11.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                )
+                if (card.isFavorite) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = ExpressivePink.copy(alpha = 0.15f),
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Filled.Favorite,
+                                contentDescription = "Favorite",
+                                tint = ExpressivePink,
+                                modifier = Modifier.size(15.dp)
+                            )
+                        }
+                    }
+                }
+
+                Surface(
+                    shape = PillShape,
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh
+                ) {
+                    Text(
+                        text = card.barcodeFormat.displayName,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontFamily = InterFamily,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 11.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                    )
+                }
             }
         }
     }
@@ -453,7 +499,7 @@ fun ExpressiveLoyaltyCardGrid(
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Start,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
@@ -471,6 +517,24 @@ fun ExpressiveLoyaltyCardGrid(
                                 fontSize = 16.sp
                             )
                         )
+                    }
+                }
+
+                if (card.isFavorite) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color.Black.copy(alpha = 0.22f),
+                        contentColor = Color.White,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Filled.Favorite,
+                                contentDescription = "Favorite",
+                                tint = ExpressivePink,
+                                modifier = Modifier.size(15.dp)
+                            )
+                        }
                     }
                 }
             }
