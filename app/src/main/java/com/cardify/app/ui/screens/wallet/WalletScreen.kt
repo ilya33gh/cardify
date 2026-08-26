@@ -22,6 +22,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
@@ -51,6 +52,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -339,17 +341,36 @@ fun WalletScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        val collapsedAlpha = (1f - (titleFraction * 1.8f)).coerceIn(0f, 1f)
+                        val topLogoInteractionSource = remember { MutableInteractionSource() }
+                        val isTopLogoPressed by topLogoInteractionSource.collectIsPressedAsState()
+                        val topLogoScale by animateFloatAsState(
+                            targetValue = if (isTopLogoPressed) 0.90f else 1.0f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessMedium
+                            ),
+                            label = "topLogoScale"
+                        )
+
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
                             modifier = Modifier
-                                .clip(RoundedCornerShape(14.dp))
-                                .clickable {
+                                .graphicsLayer {
+                                    alpha = collapsedAlpha
+                                    scaleX = topLogoScale
+                                    scaleY = topLogoScale
+                                }
+                                .clickable(
+                                    interactionSource = topLogoInteractionSource,
+                                    indication = null,
+                                    enabled = collapsedAlpha > 0.05f
+                                ) {
                                     triggerHaptic()
                                     coroutineScope.launch {
-                                        val target = if (titleOffset.value > maxTitleHeightPx * 0.5f) 0f else maxTitleHeightPx
                                         titleOffset.animateTo(
-                                            targetValue = target,
+                                            targetValue = maxTitleHeightPx,
                                             animationSpec = spring(
                                                 dampingRatio = 0.88f,
                                                 stiffness = 380f
@@ -381,9 +402,7 @@ fun WalletScreen(
                                     fontWeight = FontWeight.Black,
                                     fontSize = 24.sp
                                 ),
-                                color = MaterialTheme.colorScheme.onSurface.copy(
-                                    alpha = (1f - titleFraction).coerceIn(0f, 1f)
-                                ),
+                                color = MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1,
                                 softWrap = false
                             )
@@ -440,6 +459,17 @@ fun WalletScreen(
                     }
 
                     if (titleFraction > 0.01f) {
+                        val expandedLogoInteractionSource = remember { MutableInteractionSource() }
+                        val isExpandedLogoPressed by expandedLogoInteractionSource.collectIsPressedAsState()
+                        val expandedLogoScale by animateFloatAsState(
+                            targetValue = if (isExpandedLogoPressed) 0.94f else 1.0f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessMedium
+                            ),
+                            label = "expandedLogoScale"
+                        )
+
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -449,7 +479,28 @@ fun WalletScreen(
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier
+                                    .graphicsLayer {
+                                        alpha = titleFraction.coerceIn(0f, 1f)
+                                        scaleX = expandedLogoScale
+                                        scaleY = expandedLogoScale
+                                    }
+                                    .clickable(
+                                        interactionSource = expandedLogoInteractionSource,
+                                        indication = null
+                                    ) {
+                                        triggerHaptic()
+                                        coroutineScope.launch {
+                                            titleOffset.animateTo(
+                                                targetValue = 0f,
+                                                animationSpec = spring(
+                                                    dampingRatio = 0.88f,
+                                                    stiffness = 380f
+                                                )
+                                            )
+                                        }
+                                    }
                             ) {
                                 Surface(
                                     shape = RoundedCornerShape(16.dp),
@@ -474,9 +525,7 @@ fun WalletScreen(
                                         fontSize = (44 * titleFraction).coerceAtLeast(22f).sp,
                                         letterSpacing = (-1.0).sp
                                     ),
-                                    color = MaterialTheme.colorScheme.onSurface.copy(
-                                        alpha = titleFraction.coerceIn(0f, 1f)
-                                    ),
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     maxLines = 1,
                                     softWrap = false
                                 )
