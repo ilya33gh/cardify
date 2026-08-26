@@ -135,7 +135,7 @@ fun CardDetailSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 22.dp)
-                .padding(bottom = 32.dp)
+                .padding(top = 10.dp, bottom = 32.dp)
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -166,7 +166,7 @@ fun CardDetailSheet(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
             // Merchant / Card Title (Left) + Favorite Squircle Button (Right) in One Row
@@ -193,11 +193,18 @@ fun CardDetailSheet(
 
                 Spacer(modifier = Modifier.width(14.dp))
 
-                AnimatedFavoriteIconButton(
-                    isFavorite = card.isFavorite,
-                    onToggle = onToggleFavorite,
-                    modifier = Modifier.zIndex(100f)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .zIndex(100f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AnimatedFavoriteIconButton(
+                        isFavorite = card.isFavorite,
+                        onToggle = onToggleFavorite,
+                        modifier = Modifier.zIndex(100f)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
