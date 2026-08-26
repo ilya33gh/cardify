@@ -1,8 +1,6 @@
 <div align="center">
 
-  <img src="app/src/main/res/drawable/ic_splash_logo.xml" width="128" height="128" alt="cardify logo" />
-
-  # cardify
+  # 💳 cardify
 
   **A modern, private, and 100% offline loyalty & discount card wallet for Android.**
 
