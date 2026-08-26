@@ -73,6 +73,7 @@ fun FullScreenBarcodeDialog(
             val lp = win.attributes
             lp.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_FULL
             win.attributes = lp
+            androidx.core.view.WindowCompat.setDecorFitsSystemWindows(win, false)
         }
         actWindow?.let { win ->
             val lp = win.attributes
@@ -286,7 +287,9 @@ fun FullScreenBarcodeDialog(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 14.dp),
+                        .navigationBarsPadding()
+                        .padding(horizontal = 20.dp)
+                        .padding(top = 8.dp, bottom = 28.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Surface(
