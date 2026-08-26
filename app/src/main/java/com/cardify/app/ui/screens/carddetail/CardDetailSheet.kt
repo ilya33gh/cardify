@@ -35,7 +35,6 @@ import com.cardify.app.domain.model.CardColorPalette
 import com.cardify.app.domain.model.LoyaltyCard
 import com.cardify.app.ui.components.BarcodeDisplay
 import com.cardify.app.ui.components.ExpressiveBrightnessSlider
-import com.cardify.app.ui.components.SmartUsagePulseBadge
 import com.cardify.app.ui.components.rememberHapticHelper
 import com.cardify.app.ui.theme.*
 
@@ -111,20 +110,23 @@ fun CardDetailSheet(
 
     // Split Button Geometries: 0dp inner corner radius on joining seam!
     val leftSegmentShape = remember {
-        RoundedCornerShape(topStart = 24.dp, bottomStart = 24.dp, topEnd = 0.dp, bottomEnd = 0.dp)
+        RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp, topEnd = 0.dp, bottomEnd = 0.dp)
     }
     val rightSegmentShape = remember {
-        RoundedCornerShape(topStart = 0.dp, bottomStart = 0.dp, topEnd = 24.dp, bottomEnd = 24.dp)
+        RoundedCornerShape(topStart = 0.dp, bottomStart = 0.dp, topEnd = 20.dp, bottomEnd = 20.dp)
     }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = sheetContainerColor,
-        shape = RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp),
-        tonalElevation = 0.dp,
-        scrimColor = Color.Black.copy(alpha = 0.65f),
-        dragHandle = { BottomSheetDefaults.DragHandle() }
+        shape = BottomSheetTopShape,
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        dragHandle = {
+            BottomSheetDefaults.DragHandle(
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
+        }
     ) {
         Column(
             modifier = Modifier
@@ -134,13 +136,13 @@ fun CardDetailSheet(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Category Capsule Header & Smart Usage Badge
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (!card.categoryName.isNullOrBlank()) {
+            // Category Capsule Header (if present)
+            if (!card.categoryName.isNullOrBlank()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Surface(
                         shape = PillShape,
                         color = baseCardColor,
@@ -148,23 +150,19 @@ fun CardDetailSheet(
                     ) {
                         Text(
                             text = card.categoryName,
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
+                            style = MaterialTheme.typography.labelLarge.copy(
+                                fontFamily = InterFamily,
+                                fontWeight = FontWeight.Bold
+                            ),
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                             maxLines = 1,
                             softWrap = false,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
-                } else {
-                    Spacer(modifier = Modifier.width(1.dp))
                 }
-
-                SmartUsagePulseBadge(
-                    isFavorite = card.isFavorite,
-                    useCount = card.useCount
-                )
+                Spacer(modifier = Modifier.height(14.dp))
             }
-            Spacer(modifier = Modifier.height(14.dp))
 
             // Merchant / Card Title (Display Large in Space Grotesk Black)
             Text(

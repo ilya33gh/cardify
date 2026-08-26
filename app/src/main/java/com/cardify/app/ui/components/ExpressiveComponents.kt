@@ -95,73 +95,9 @@ fun buildHighlightedText(
 }
 
 /**
- * Material 3 Expressive Smart Usage / Favorite Pulse Badge (Delight Feature 3)
- */
-@Composable
-fun SmartUsagePulseBadge(
-    isFavorite: Boolean,
-    useCount: Int,
-    modifier: Modifier = Modifier
-) {
-    if (!isFavorite && useCount < 3) return
-
-    val infiniteTransition = rememberInfiniteTransition(label = "pulseBadgeTransition")
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 0.82f,
-        targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulseAlpha"
-    )
-
-    Surface(
-        shape = PillShape,
-        color = if (isFavorite) Color(0xFFFFD54F).copy(alpha = 0.25f * alpha) else Color.Black.copy(alpha = 0.22f * alpha),
-        contentColor = Color.White,
-        modifier = modifier
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            if (isFavorite) {
-                Icon(
-                    imageVector = Icons.Filled.Star,
-                    contentDescription = null,
-                    tint = Color(0xFFFFD54F),
-                    modifier = Modifier.size(13.dp)
-                )
-                Text(
-                    text = "Избранное",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontFamily = InterFamily,
-                        fontWeight = FontWeight.Black,
-                        fontSize = 11.sp
-                    ),
-                    color = Color.White
-                )
-            } else {
-                Text(
-                    text = "🔥 Часто",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontFamily = InterFamily,
-                        fontWeight = FontWeight.Black,
-                        fontSize = 11.sp
-                    ),
-                    color = Color.White
-                )
-            }
-        }
-    }
-}
-
-/**
- * Google Material 3 Expressive Cardfolio Pass Card
- * Symmetrical 26.dp shape, high-contrast solid colors, floating white barcode island (16.dp),
- * brand monogram badge, and tactile Google press physics (scale = 0.96f).
+ * Google Material 3 Expressive Cardfolio Pass Card (Google Pay / Google Wallet Style)
+ * Symmetrical 24.dp shape, harmonious 16.dp barcode island, clean brand monogram,
+ * high-contrast solid colors, and tactile Google press physics (scale = 0.96f).
  */
 @Composable
 fun ExpressiveLoyaltyCard(
@@ -216,72 +152,63 @@ fun ExpressiveLoyaltyCard(
                 .fillMaxWidth()
                 .padding(20.dp)
         ) {
-            // 1. Top Header: Monogram Badge + Category Pill (Left) + Smart Usage/Favorite Badge (Right)
+            // 1. Top Header: Minimal Google Pay Monogram Badge + Category Pill
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                // Brand Monogram Circle
+                Surface(
+                    shape = CircleShape,
+                    color = Color.Black.copy(alpha = 0.22f),
+                    contentColor = Color.White,
+                    modifier = Modifier.size(36.dp)
                 ) {
-                    // Brand Monogram Circle
-                    Surface(
-                        shape = CircleShape,
-                        color = Color.Black.copy(alpha = 0.3f),
-                        contentColor = Color.White,
-                        modifier = Modifier.size(34.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = storeInitial,
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontFamily = InterFamily,
-                                    fontWeight = FontWeight.Black
-                                )
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = storeInitial,
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontFamily = InterFamily,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 17.sp
                             )
-                        }
-                    }
-
-                    if (!card.categoryName.isNullOrBlank()) {
-                        Surface(
-                            shape = PillShape,
-                            color = Color.Black.copy(alpha = 0.25f),
-                            contentColor = Color.White
-                        ) {
-                            Text(
-                                text = card.categoryName,
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontFamily = InterFamily,
-                                    fontWeight = FontWeight.Bold
-                                ),
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
+                        )
                     }
                 }
 
-                // Feature 3: Smart Usage / Favorite Pulse Badge
-                SmartUsagePulseBadge(
-                    isFavorite = card.isFavorite,
-                    useCount = card.useCount
-                )
+                if (!card.categoryName.isNullOrBlank()) {
+                    Surface(
+                        shape = PillShape,
+                        color = Color.Black.copy(alpha = 0.18f),
+                        contentColor = Color.White
+                    ) {
+                        Text(
+                            text = card.categoryName,
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontFamily = InterFamily,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.sp
+                            ),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 2. Merchant / Card Title (Space Grotesk Black with Match Highlight)
+            // 2. Merchant / Card Title (Space Grotesk Bold with Match Highlight)
             Text(
                 text = buildHighlightedText(card.title, searchQuery),
                 style = MaterialTheme.typography.headlineLarge.copy(
                     fontFamily = SpaceGroteskFamily,
-                    fontWeight = FontWeight.Black,
-                    fontSize = 24.sp,
-                    lineHeight = 28.sp
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 23.sp,
+                    lineHeight = 27.sp
                 ),
                 color = Color.White,
                 maxLines = 1,
@@ -291,7 +218,7 @@ fun ExpressiveLoyaltyCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 3. Floating White Barcode Island
+            // 3. Floating White Barcode Island (Concentric 16.dp Radius)
             Surface(
                 shape = BarcodeIslandShape,
                 color = Color.White,
@@ -302,13 +229,13 @@ fun ExpressiveLoyaltyCard(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                        .padding(horizontal = 16.dp, vertical = 13.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.weight(1f)
                     ) {
                         Icon(
@@ -326,7 +253,7 @@ fun ExpressiveLoyaltyCard(
                             ),
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontFamily = InterFamily,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = FontWeight.SemiBold,
                                 fontSize = 16.sp
                             ),
                             color = Color(0xFF1E1E1E),
@@ -338,14 +265,15 @@ fun ExpressiveLoyaltyCard(
 
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFFF0F2F5),
+                        color = Color(0xFFF1F3F4),
                         contentColor = Color(0xFF44474F)
                     ) {
                         Text(
                             text = card.barcodeFormat.displayName,
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontFamily = InterFamily,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 11.sp
                             ),
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             maxLines = 1,
@@ -359,7 +287,7 @@ fun ExpressiveLoyaltyCard(
 }
 
 /**
- * Compact Horizontal List Row View for Loyalty Cards
+ * Compact Horizontal List Row View for Loyalty Cards (Google Wallet Row Style)
  */
 @Composable
 fun ExpressiveLoyaltyCardRow(
@@ -400,8 +328,8 @@ fun ExpressiveLoyaltyCardRow(
                     onLongPress = { offset -> onLongClick(offset) }
                 )
             },
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        shape = ExpressiveRowCardShape,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
         contentColor = MaterialTheme.colorScheme.onSurface
     ) {
         Row(
@@ -451,45 +379,27 @@ fun ExpressiveLoyaltyCardRow(
                 )
             }
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            Surface(
+                shape = PillShape,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh
             ) {
-                if (card.isFavorite) {
-                    Icon(
-                        imageVector = Icons.Filled.Star,
-                        contentDescription = "Избранное",
-                        tint = Color(0xFFFFD54F),
-                        modifier = Modifier.size(16.dp)
-                    )
-                } else if (card.useCount >= 3) {
-                    Text(
-                        text = "🔥",
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                }
-
-                Surface(
-                    shape = PillShape,
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh
-                ) {
-                    Text(
-                        text = card.barcodeFormat.displayName,
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontFamily = InterFamily,
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                }
+                Text(
+                    text = card.barcodeFormat.displayName,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontFamily = InterFamily,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 11.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                )
             }
         }
     }
 }
 
 /**
- * 2-Column Compact Grid Card View for Loyalty Cards
+ * 2-Column Compact Grid Card View for Loyalty Cards (Google Wallet Grid Style)
  */
 @Composable
 fun ExpressiveLoyaltyCardGrid(
@@ -531,7 +441,7 @@ fun ExpressiveLoyaltyCardGrid(
                     onLongPress = { offset -> onLongClick(offset) }
                 )
             },
-        shape = RoundedCornerShape(18.dp),
+        shape = ExpressiveGridCardShape,
         color = solidCardColor,
         contentColor = Color.White
     ) {
@@ -543,30 +453,26 @@ fun ExpressiveLoyaltyCardGrid(
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
                     shape = CircleShape,
-                    color = Color.Black.copy(alpha = 0.3f),
+                    color = Color.Black.copy(alpha = 0.22f),
                     contentColor = Color.White,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(34.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(
                             text = storeInitial,
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontFamily = InterFamily,
-                                fontWeight = FontWeight.Black
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
                             )
                         )
                     }
                 }
-
-                SmartUsagePulseBadge(
-                    isFavorite = card.isFavorite,
-                    useCount = card.useCount
-                )
             }
 
             Column {
@@ -574,7 +480,7 @@ fun ExpressiveLoyaltyCardGrid(
                     text = buildHighlightedText(card.title, searchQuery),
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontFamily = SpaceGroteskFamily,
-                        fontWeight = FontWeight.Black,
+                        fontWeight = FontWeight.Bold,
                         fontSize = 17.sp,
                         lineHeight = 20.sp
                     ),
@@ -587,9 +493,9 @@ fun ExpressiveLoyaltyCardGrid(
                     text = buildHighlightedText(card.barcodeValue, searchQuery),
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontFamily = InterFamily,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Medium
                     ),
-                    color = Color.White.copy(alpha = 0.9f),
+                    color = Color.White.copy(alpha = 0.85f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
