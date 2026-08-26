@@ -35,6 +35,7 @@ import com.cardify.app.domain.model.CardColorPalette
 import com.cardify.app.domain.model.LoyaltyCard
 import com.cardify.app.ui.components.BarcodeDisplay
 import com.cardify.app.ui.components.ExpressiveBrightnessSlider
+import com.cardify.app.ui.components.SmartUsagePulseBadge
 import com.cardify.app.ui.components.rememberHapticHelper
 import com.cardify.app.ui.theme.*
 
@@ -133,13 +134,13 @@ fun CardDetailSheet(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Category Capsule Header (if present)
-            if (!card.categoryName.isNullOrBlank()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Start,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            // Category Capsule Header & Smart Usage Badge
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (!card.categoryName.isNullOrBlank()) {
                     Surface(
                         shape = PillShape,
                         color = baseCardColor,
@@ -154,9 +155,16 @@ fun CardDetailSheet(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
+                } else {
+                    Spacer(modifier = Modifier.width(1.dp))
                 }
-                Spacer(modifier = Modifier.height(14.dp))
+
+                SmartUsagePulseBadge(
+                    isFavorite = card.isFavorite,
+                    useCount = card.useCount
+                )
             }
+            Spacer(modifier = Modifier.height(14.dp))
 
             // Merchant / Card Title (Display Large in Space Grotesk Black)
             Text(

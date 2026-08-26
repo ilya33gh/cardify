@@ -80,7 +80,10 @@ fun ExpressiveBrightnessSlider(
     // Function to apply brightness to active Window & Activity with high-frequency tactile haptics
     fun applyBrightness(newVal: Float) {
         val clamped = newVal.coerceIn(0.05f, 1.0f)
-        if (kotlin.math.abs(clamped - lastHapticValue) >= 0.012f) {
+        if (clamped >= 0.99f && lastHapticValue < 0.99f) {
+            hapticHelper.performClick()
+            lastHapticValue = clamped
+        } else if (kotlin.math.abs(clamped - lastHapticValue) >= 0.012f) {
             hapticHelper.performTick()
             lastHapticValue = clamped
         }

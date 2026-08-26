@@ -95,6 +95,70 @@ fun buildHighlightedText(
 }
 
 /**
+ * Material 3 Expressive Smart Usage / Favorite Pulse Badge (Delight Feature 3)
+ */
+@Composable
+fun SmartUsagePulseBadge(
+    isFavorite: Boolean,
+    useCount: Int,
+    modifier: Modifier = Modifier
+) {
+    if (!isFavorite && useCount < 3) return
+
+    val infiniteTransition = rememberInfiniteTransition(label = "pulseBadgeTransition")
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.82f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulseAlpha"
+    )
+
+    Surface(
+        shape = PillShape,
+        color = if (isFavorite) Color(0xFFFFD54F).copy(alpha = 0.25f * alpha) else Color.Black.copy(alpha = 0.22f * alpha),
+        contentColor = Color.White,
+        modifier = modifier
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            if (isFavorite) {
+                Icon(
+                    imageVector = Icons.Filled.Star,
+                    contentDescription = null,
+                    tint = Color(0xFFFFD54F),
+                    modifier = Modifier.size(13.dp)
+                )
+                Text(
+                    text = "Избранное",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontFamily = InterFamily,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 11.sp
+                    ),
+                    color = Color.White
+                )
+            } else {
+                Text(
+                    text = "🔥 Часто",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontFamily = InterFamily,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 11.sp
+                    ),
+                    color = Color.White
+                )
+            }
+        }
+    }
+}
+
+/**
  * Google Material 3 Expressive Cardfolio Pass Card
  * Symmetrical 26.dp shape, high-contrast solid colors, floating white barcode island (16.dp),
  * brand monogram badge, and tactile Google press physics (scale = 0.96f).
@@ -152,7 +216,7 @@ fun ExpressiveLoyaltyCard(
                 .fillMaxWidth()
                 .padding(20.dp)
         ) {
-            // 1. Top Header: Monogram Badge + Category Pill (No Heart Button)
+            // 1. Top Header: Monogram Badge + Category Pill (Left) + Smart Usage/Favorite Badge (Right)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -200,6 +264,12 @@ fun ExpressiveLoyaltyCard(
                         }
                     }
                 }
+
+                // Feature 3: Smart Usage / Favorite Pulse Badge
+                SmartUsagePulseBadge(
+                    isFavorite = card.isFavorite,
+                    useCount = card.useCount
+                )
             }
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -381,19 +451,38 @@ fun ExpressiveLoyaltyCardRow(
                 )
             }
 
-            Surface(
-                shape = PillShape,
-                color = MaterialTheme.colorScheme.surfaceContainerHigh
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Text(
-                    text = card.barcodeFormat.displayName,
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontFamily = InterFamily,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                )
+                if (card.isFavorite) {
+                    Icon(
+                        imageVector = Icons.Filled.Star,
+                        contentDescription = "Избранное",
+                        tint = Color(0xFFFFD54F),
+                        modifier = Modifier.size(16.dp)
+                    )
+                } else if (card.useCount >= 3) {
+                    Text(
+                        text = "🔥",
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+
+                Surface(
+                    shape = PillShape,
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh
+                ) {
+                    Text(
+                        text = card.barcodeFormat.displayName,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontFamily = InterFamily,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
             }
         }
     }
@@ -473,6 +562,11 @@ fun ExpressiveLoyaltyCardGrid(
                         )
                     }
                 }
+
+                SmartUsagePulseBadge(
+                    isFavorite = card.isFavorite,
+                    useCount = card.useCount
+                )
             }
 
             Column {
