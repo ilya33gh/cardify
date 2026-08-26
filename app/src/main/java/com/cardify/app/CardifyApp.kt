@@ -8,6 +8,7 @@ import com.cardify.app.data.repository.BackupRepository
 import com.cardify.app.data.repository.CardRepository
 import com.cardify.app.data.repository.CategoryRepository
 
+import com.cardify.app.data.local.SecurityHelper
 import com.cardify.app.ui.components.HapticPreference
 
 class CardifyApp : Application() {
@@ -21,6 +22,7 @@ class CardifyApp : Application() {
         super.onCreate()
         LocaleHelper.init(this)
         ThemeHelper.init(this)
+        SecurityHelper.init(this)
         HapticPreference.init(this)
     }
 }

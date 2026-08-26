@@ -39,26 +39,45 @@ class MainActivity : FragmentActivity() {
             val iconView = splashScreenViewProvider.iconView
             val splashView = splashScreenViewProvider.view
 
-            val scaleX = PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 0.35f, 0f)
-            val scaleY = PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 0.35f, 0f)
-            val iconAlpha = PropertyValuesHolder.ofFloat(View.ALPHA, 1f, 0f)
+            if (iconView != null) {
+                val scaleX = PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 0.35f, 0f)
+                val scaleY = PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 0.35f, 0f)
+                val iconAlpha = PropertyValuesHolder.ofFloat(View.ALPHA, 1f, 0f)
 
-            val iconAnimator = ObjectAnimator.ofPropertyValuesHolder(iconView, scaleX, scaleY, iconAlpha).apply {
-                interpolator = AnticipateInterpolator(1.6f)
-                duration = 380L
-            }
-
-            val bgAlpha = ObjectAnimator.ofFloat(splashView, View.ALPHA, 1f, 0f).apply {
-                interpolator = AccelerateDecelerateInterpolator()
-                duration = 380L
-            }
-
-            AnimatorSet().apply {
-                playTogether(iconAnimator, bgAlpha)
-                doOnEnd {
-                    splashScreenViewProvider.remove()
+                val iconAnimator = ObjectAnimator.ofPropertyValuesHolder(iconView, scaleX, scaleY, iconAlpha).apply {
+                    interpolator = AnticipateInterpolator(1.6f)
+                    duration = 380L
                 }
-                start()
+
+                val bgAlpha = ObjectAnimator.ofFloat(splashView, View.ALPHA, 1f, 0f).apply {
+                    interpolator = AccelerateDecelerateInterpolator()
+                    duration = 380L
+                }
+
+                AnimatorSet().apply {
+                    playTogether(iconAnimator, bgAlpha)
+                    doOnEnd {
+                        try {
+                            splashScreenViewProvider.remove()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                    start()
+                }
+            } else {
+                ObjectAnimator.ofFloat(splashView, View.ALPHA, 1f, 0f).apply {
+                    interpolator = AccelerateDecelerateInterpolator()
+                    duration = 380L
+                    doOnEnd {
+                        try {
+                            splashScreenViewProvider.remove()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                    start()
+                }
             }
         }
 
