@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.core.graphics.ColorUtils
 import com.cardify.app.R
 import com.cardify.app.domain.model.CardColorPalette
@@ -138,13 +139,13 @@ fun CardDetailSheet(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Top Row: Category Capsule (Left) + Favorite Squircle Button (Right)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (!card.categoryName.isNullOrBlank()) {
+            // Category Capsule Header (if present)
+            if (!card.categoryName.isNullOrBlank()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Surface(
                         shape = PillShape,
                         color = baseCardColor,
@@ -162,29 +163,46 @@ fun CardDetailSheet(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
-                } else {
-                    Spacer(modifier = Modifier.width(1.dp))
                 }
-
-                AnimatedFavoriteIconButton(
-                    isFavorite = card.isFavorite,
-                    onToggle = onToggleFavorite
-                )
+                Spacer(modifier = Modifier.height(10.dp))
             }
-            Spacer(modifier = Modifier.height(14.dp))
 
-            // Merchant / Card Title (Display Large in Space Grotesk Black)
-            Text(
-                text = card.title,
-                style = MaterialTheme.typography.displaySmall.copy(
-                    fontFamily = SpaceGroteskFamily,
-                    fontWeight = FontWeight.Black,
-                    fontSize = 28.sp
-                ),
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
+            // Merchant / Card Title (Left) + Favorite Squircle Button (Right) in One Row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .zIndex(10f),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = card.title,
+                    style = MaterialTheme.typography.displaySmall.copy(
+                        fontFamily = SpaceGroteskFamily,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 28.sp,
+                        lineHeight = 32.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+
+                Spacer(modifier = Modifier.width(14.dp))
+
+                Box(
+                    modifier = Modifier
+                        .zIndex(20f)
+                        .wrapContentSize(Alignment.Center)
+                ) {
+                    AnimatedFavoriteIconButton(
+                        isFavorite = card.isFavorite,
+                        onToggle = onToggleFavorite,
+                        modifier = Modifier.zIndex(20f)
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(20.dp))
 
