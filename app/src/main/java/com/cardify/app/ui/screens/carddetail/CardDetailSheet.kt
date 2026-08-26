@@ -142,7 +142,9 @@ fun CardDetailSheet(
             // Category Capsule Header (if present)
             if (!card.categoryName.isNullOrBlank()) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .zIndex(0f),
                     horizontalArrangement = Arrangement.Start,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -164,14 +166,14 @@ fun CardDetailSheet(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(14.dp))
             }
 
             // Merchant / Card Title (Left) + Favorite Squircle Button (Right) in One Row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .zIndex(10f),
+                    .zIndex(100f),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -191,17 +193,11 @@ fun CardDetailSheet(
 
                 Spacer(modifier = Modifier.width(14.dp))
 
-                Box(
-                    modifier = Modifier
-                        .zIndex(20f)
-                        .wrapContentSize(Alignment.Center)
-                ) {
-                    AnimatedFavoriteIconButton(
-                        isFavorite = card.isFavorite,
-                        onToggle = onToggleFavorite,
-                        modifier = Modifier.zIndex(20f)
-                    )
-                }
+                AnimatedFavoriteIconButton(
+                    isFavorite = card.isFavorite,
+                    onToggle = onToggleFavorite,
+                    modifier = Modifier.zIndex(100f)
+                )
             }
 
             Spacer(modifier = Modifier.height(20.dp))

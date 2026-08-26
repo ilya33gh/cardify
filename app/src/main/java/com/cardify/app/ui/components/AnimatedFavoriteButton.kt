@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.cardify.app.ui.theme.SquircleShape
@@ -92,9 +93,13 @@ fun AnimatedFavoriteIconButton(
         contentColor = contentColor,
         tonalElevation = if (isFavorite) 4.dp else 0.dp,
         modifier = modifier
-            .zIndex(10f)
+            .zIndex(100f)
+            .graphicsLayer {
+                scaleX = heartbeatScale.value
+                scaleY = heartbeatScale.value
+                clip = false
+            }
             .size(44.dp)
-            .scale(heartbeatScale.value)
     ) {
         Box(
             contentAlignment = Alignment.Center,

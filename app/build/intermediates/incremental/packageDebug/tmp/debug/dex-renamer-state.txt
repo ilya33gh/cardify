@@ -1,4 +1,4 @@
-#Wed Aug 26 13:59:20 MSK 2026
+#Wed Aug 26 14:01:35 MSK 2026
 base.0=C\:\\Users\\shumi\\OneDrive\\Documents\\Cardify\\app\\build\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes.dex
 base.1=C\:\\Users\\shumi\\OneDrive\\Documents\\Cardify\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\0\\classes.dex
 base.10=C\:\\Users\\shumi\\OneDrive\\Documents\\Cardify\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\7\\classes.dex
