@@ -6,8 +6,8 @@ import android.animation.PropertyValuesHolder
 import android.os.Bundle
 import android.view.View
 import android.view.WindowManager
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.AnticipateInterpolator
-import android.view.animation.FastOutSlowInInterpolator
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
@@ -49,7 +49,7 @@ class MainActivity : FragmentActivity() {
             }
 
             val bgAlpha = ObjectAnimator.ofFloat(splashView, View.ALPHA, 1f, 0f).apply {
-                interpolator = FastOutSlowInInterpolator()
+                interpolator = AccelerateDecelerateInterpolator()
                 duration = 380L
             }
 
