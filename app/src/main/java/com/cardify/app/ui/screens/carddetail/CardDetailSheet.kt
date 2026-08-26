@@ -37,6 +37,7 @@ import com.cardify.app.domain.model.LoyaltyCard
 import com.cardify.app.ui.components.AnimatedFavoriteIconButton
 import com.cardify.app.ui.components.BarcodeDisplay
 import com.cardify.app.ui.components.ExpressiveBrightnessSlider
+import com.cardify.app.ui.components.getLocalizedCategoryRes
 import com.cardify.app.ui.components.rememberHapticHelper
 import com.cardify.app.ui.theme.*
 
@@ -141,6 +142,8 @@ fun CardDetailSheet(
         ) {
             // Category Capsule Header (if present)
             if (!card.categoryName.isNullOrBlank()) {
+                val localizedRes = getLocalizedCategoryRes(card.categoryName)
+                val displayCatName = if (localizedRes != null) stringResource(localizedRes) else card.categoryName
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -154,7 +157,7 @@ fun CardDetailSheet(
                         contentColor = Color.White
                     ) {
                         Text(
-                            text = card.categoryName,
+                            text = displayCatName,
                             style = MaterialTheme.typography.labelLarge.copy(
                                 fontFamily = InterFamily,
                                 fontWeight = FontWeight.Bold

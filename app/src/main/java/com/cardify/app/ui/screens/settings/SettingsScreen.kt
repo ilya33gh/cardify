@@ -52,6 +52,7 @@ import com.cardify.app.domain.model.CardColorPalette
 import com.cardify.app.ui.components.M3SettingsSegmentedSwitcher
 import com.cardify.app.ui.components.SegmentItem
 import com.cardify.app.ui.components.getCategoryIcon
+import com.cardify.app.ui.components.getLocalizedCategoryRes
 import com.cardify.app.ui.components.rememberHapticHelper
 import com.cardify.app.ui.theme.*
 import kotlinx.coroutines.launch
@@ -1235,8 +1236,11 @@ private fun M3SwipeableCategoryRow(
                         )
                     }
 
+                    val localizedRes = getLocalizedCategoryRes(category.name)
+                    val displayName = if (localizedRes != null) stringResource(localizedRes) else category.name
+
                     Text(
-                        text = category.name,
+                        text = displayName,
                         style = MaterialTheme.typography.bodyLarge.copy(
                             fontWeight = FontWeight.Bold,
                             fontSize = 17.sp

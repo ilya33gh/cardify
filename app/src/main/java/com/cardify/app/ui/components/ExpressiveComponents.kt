@@ -1195,7 +1195,7 @@ fun CategoryFilterRow(
         itemsIndexed(categories, key = { _, cat -> cat.id }) { index, category ->
             val chipIndex = index + 1
             val isSelected = selectedCategoryIndex == chipIndex
-            val localizedRes = getLocalizedCategoryRes(category.iconName)
+            val localizedRes = getLocalizedCategoryRes(category.name)
             val displayName = if (localizedRes != null) stringResource(localizedRes) else category.name
 
             GooglePillChip(
@@ -1360,18 +1360,18 @@ fun ColorPickerRow(
     }
 }
 
-fun getLocalizedCategoryRes(iconName: String): Int? {
-    return when (iconName) {
-        "shopping_cart" -> R.string.cat_supermarkets
-        "checkroom" -> R.string.cat_clothing
-        "local_pharmacy" -> R.string.cat_pharmacy
-        "local_gas_station" -> R.string.cat_gas
-        "restaurant" -> R.string.cat_restaurants
-        "devices" -> R.string.cat_electronics
-        "sports_esports" -> R.string.cat_entertainment
-        "card_giftcard" -> R.string.cat_gifts
-        "fitness_center" -> R.string.cat_fitness
-        "local_cafe" -> R.string.cat_cafe
+fun getLocalizedCategoryRes(categoryName: String): Int? {
+    return when (categoryName.trim()) {
+        "Супермаркеты", "Supermarkets" -> R.string.cat_supermarkets
+        "Одежда и обувь", "Clothing & Shoes" -> R.string.cat_clothing
+        "Аптеки и здоровье", "Pharmacy & Health", "Аптеки", "Pharmacy" -> R.string.cat_pharmacy
+        "АЗС и авто", "Gas & Auto", "АЗС", "Gas" -> R.string.cat_gas
+        "Рестораны и кафе", "Restaurants & Cafes", "Рестораны", "Restaurants" -> R.string.cat_restaurants
+        "Электроника", "Electronics" -> R.string.cat_electronics
+        "Развлечения", "Entertainment" -> R.string.cat_entertainment
+        "Подарки", "Gifts" -> R.string.cat_gifts
+        "Спорт", "Fitness" -> R.string.cat_fitness
+        "Кафе", "Cafe" -> R.string.cat_cafe
         else -> null
     }
 }

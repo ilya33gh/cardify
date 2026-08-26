@@ -253,7 +253,7 @@ fun AddEditCardScreen(
             ) {
                 uiState.categories.forEach { category ->
                     val isSelected = uiState.selectedCategoryId == category.id
-                    val localizedRes = getLocalizedCategoryRes(category.iconName)
+                    val localizedRes = getLocalizedCategoryRes(category.name)
                     val displayName = if (localizedRes != null) stringResource(localizedRes) else category.name
 
                     GooglePillChip(
