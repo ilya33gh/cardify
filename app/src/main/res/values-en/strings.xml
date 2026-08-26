@@ -1,0 +1,125 @@
+<resources>
+    <string name="app_name">Cardify</string>
+    <string name="search_placeholder">Search…</string>
+    <string name="all_categories">All</string>
+    <string name="all_cards_tab">All Cards</string>
+    <string name="favorites_tab">Favorites</string>
+    <string name="empty_wallet_title">Wallet is empty</string>
+    <string name="empty_wallet_subtitle">Add your first card for instant access</string>
+    <string name="not_found_title">Nothing found</string>
+    <string name="not_found_subtitle">Try another search query</string>
+    <string name="scan_action">Scan</string>
+    <string name="manual_action">Manual</string>
+    <string name="add_card_action">Add card</string>
+    <string name="edit_action">Edit</string>
+    <string name="delete_action">Delete</string>
+    <string name="copy_action">Copy</string>
+    <string name="copied_toast">Copied to clipboard</string>
+    <string name="share_action">Share</string>
+    <string name="share_title">Share card</string>
+    <string name="max_brightness_badge">Max brightness</string>
+    <string name="note_label">Note</string>
+    <string name="note_optional_label">Note (optional)</string>
+    <string name="note_placeholder">Discount, PIN or extra info</string>
+    <string name="delete_card_dialog_title">Delete card?</string>
+    <string name="delete_card_dialog_text">Delete \"%1$s\" from your wallet?</string>
+    <string name="cancel_action">Cancel</string>
+    <string name="save_action">Save</string>
+    <string name="add_to_wallet_action">Add to wallet</string>
+    <string name="new_card_title">New card</string>
+    <string name="edit_card_title">Edit card</string>
+    <string name="card_preview_title">Code preview</string>
+    <string name="card_title_label">Title</string>
+    <string name="card_title_placeholder">E.g., Walmart, Target, Starbucks</string>
+    <string name="card_code_label">Number or code</string>
+    <string name="card_code_placeholder">Barcode digits or link</string>
+    <string name="code_type_label">Code type</string>
+    <string name="category_label">Category</string>
+    <string name="card_color_label">Card color</string>
+    <string name="code_badge">Code</string>
+    <string name="brightness_label">Brightness</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="theme_section_title">App Theme</string>
+    <string name="dynamic_color_title">Dynamic Colors</string>
+    <string name="dynamic_color_subtitle">Material You wallpaper colors (Android 12+)</string>
+    <string name="haptic_feedback_title">Haptic feedback</string>
+    <string name="haptic_feedback_subtitle">Vibration on taps and gestures</string>
+    <string name="theme_auto">Auto</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_oled">OLED</string>
+    <string name="language_section_title">App Language</string>
+    <string name="language_system">System</string>
+    <string name="language_ru">Русский</string>
+    <string name="language_en">English</string>
+    <string name="backup_section_title">Backup &amp; Restore</string>
+    <string name="export_json_title">Export to JSON</string>
+    <string name="export_json_subtitle">Save a backup of your cards</string>
+    <string name="import_json_title">Import from JSON</string>
+    <string name="import_json_subtitle">Restore cards from a file</string>
+    <string name="categories_section_title">Card Categories</string>
+    <string name="add_category_action">Add</string>
+    <string name="new_category_title">New Category</string>
+    <string name="category_name_label">Name</string>
+    <string name="category_icon_label">Icon</string>
+    <string name="create_action">Create</string>
+    <string name="delete_category_action">Delete category</string>
+
+    <!-- Predefined category names -->
+    <string name="cat_supermarkets">Supermarkets</string>
+    <string name="cat_clothing">Clothing &amp; Shoes</string>
+    <string name="cat_pharmacy">Pharmacies</string>
+    <string name="cat_gas">Gas Stations</string>
+    <string name="cat_restaurants">Restaurants</string>
+    <string name="cat_electronics">Electronics</string>
+    <string name="cat_entertainment">Entertainment</string>
+    <string name="cat_gifts">Gifts</string>
+    <string name="cat_fitness">Fitness</string>
+    <string name="cat_cafe">Cafe</string>
+
+    <!-- Scanner -->
+    <string name="camera_permission_title">Camera access required</string>
+    <string name="camera_permission_subtitle">Grant camera access to automatically scan barcodes and QR codes</string>
+    <string name="grant_permission_action">Grant permission</string>
+    <string name="gallery_action">Gallery</string>
+    <string name="files_action">Files</string>
+    <string name="torch_action">Flashlight</string>
+    <string name="barcode_recognition_toast">Recognizing…</string>
+    <string name="barcode_not_found_toast">No barcode detected in image</string>
+
+    <!-- Toasts & Validation -->
+    <string name="export_success_toast">Exported %1$d cards</string>
+    <string name="import_success_toast">Imported %1$d cards</string>
+    <string name="category_added_toast">Category \"%1$s\" added</string>
+    <string name="category_deleted_toast">Category deleted</string>
+    <string name="validation_title_empty">Please enter a card title</string>
+    <string name="validation_code_empty">Please enter barcode digits or text</string>
+
+    <!-- Security & Lock Screen -->
+    <string name="security_section_title">Security &amp; Privacy</string>
+    <string name="app_lock_title">App Security</string>
+    <string name="app_lock_subtitle">Biometrics or PIN on launch</string>
+    <string name="lock_timeout_title">Auto-lock timeout</string>
+    <string name="lock_timeout_immediately">Immediately</string>
+    <string name="lock_timeout_1min">1 min</string>
+    <string name="lock_timeout_5min">5 min</string>
+    <string name="recent_apps_title">Recent apps protection</string>
+    <string name="recent_apps_subtitle">Prevent screenshots and app preview</string>
+    <string name="privacy_mode_title">Privacy mode</string>
+    <string name="privacy_mode_subtitle">Hide card numbers until tapped</string>
+    <string name="lock_screen_title">Cardify is Locked</string>
+    <string name="lock_screen_subtitle">Verify your identity to access wallet</string>
+    <string name="unlock_button_action">Unlock</string>
+
+    <!-- Sorting & Layout -->
+    <string name="sort_alphabetical">Alphabetical (A-Z)</string>
+    <string name="sort_date_added">Date added</string>
+    <string name="sort_frequency">Most used</string>
+    <string name="layout_full_cards">Full cards</string>
+    <string name="layout_list_rows">Compact rows</string>
+    <string name="layout_grid_2col">2-column grid</string>
+    <string name="add_favorite">Add to favorites</string>
+    <string name="remove_favorite">Remove from favorites</string>
+</resources>

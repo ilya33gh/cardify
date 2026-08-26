@@ -1,0 +1,26 @@
+[
+    {
+        "merged": "com.cardify.app-debug-74:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.cardify.app-main-76:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.cardify.app-debug-74:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.cardify.app-main-76:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "com.cardify.app-debug-74:/font_space_grotesk.ttf.flat",
+        "source": "com.cardify.app-main-76:/font/space_grotesk.ttf"
+    },
+    {
+        "merged": "com.cardify.app-debug-74:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "com.cardify.app-main-76:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.cardify.app-debug-74:/xml_data_extraction_rules.xml.flat",
+        "source": "com.cardify.app-main-76:/xml/data_extraction_rules.xml"
+    },
+    {
+        "merged": "com.cardify.app-debug-74:/xml_backup_rules.xml.flat",
+        "source": "com.cardify.app-main-76:/xml/backup_rules.xml"
+    }
+]

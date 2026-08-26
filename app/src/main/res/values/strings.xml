@@ -1,0 +1,125 @@
+<resources>
+    <string name="app_name">Cardify</string>
+    <string name="search_placeholder">Поиск…</string>
+    <string name="all_categories">Все</string>
+    <string name="all_cards_tab">Все карты</string>
+    <string name="favorites_tab">Избранное</string>
+    <string name="empty_wallet_title">Кошелек пуст</string>
+    <string name="empty_wallet_subtitle">Добавьте первую карту для быстрого доступа</string>
+    <string name="not_found_title">Ничего не найдено</string>
+    <string name="not_found_subtitle">Попробуйте другой запрос</string>
+    <string name="scan_action">Сканировать</string>
+    <string name="manual_action">Вручную</string>
+    <string name="add_card_action">Добавить карту</string>
+    <string name="edit_action">Изменить</string>
+    <string name="delete_action">Удалить</string>
+    <string name="copy_action">Копировать</string>
+    <string name="copied_toast">Скопировано</string>
+    <string name="share_action">Поделиться</string>
+    <string name="share_title">Поделиться картой</string>
+    <string name="max_brightness_badge">Макс. яркость</string>
+    <string name="note_label">Заметка</string>
+    <string name="note_optional_label">Заметка (необязательно)</string>
+    <string name="note_placeholder">Скидка, пин-код или доп. инфо</string>
+    <string name="delete_card_dialog_title">Удалить карту?</string>
+    <string name="delete_card_dialog_text">Удалить «%1$s» из кошелька?</string>
+    <string name="cancel_action">Отмена</string>
+    <string name="save_action">Сохранить</string>
+    <string name="add_to_wallet_action">Добавить в кошелек</string>
+    <string name="new_card_title">Новая карта</string>
+    <string name="edit_card_title">Редактирование</string>
+    <string name="card_preview_title">Предпросмотр кода</string>
+    <string name="card_title_label">Название</string>
+    <string name="card_title_placeholder">Например: Магнит, Перекрёсток</string>
+    <string name="card_code_label">Номер или код</string>
+    <string name="card_code_placeholder">Цифры штрихкода или ссылка</string>
+    <string name="code_type_label">Тип кода</string>
+    <string name="category_label">Категория</string>
+    <string name="card_color_label">Цвет карты</string>
+    <string name="code_badge">Код</string>
+    <string name="brightness_label">Яркость</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Настройки</string>
+    <string name="theme_section_title">Тема оформления</string>
+    <string name="dynamic_color_title">Динамические цвета</string>
+    <string name="dynamic_color_subtitle">Цвета обоев Material You (Android 12+)</string>
+    <string name="haptic_feedback_title">Вибрация</string>
+    <string name="haptic_feedback_subtitle">Тактильный отклик при нажатиях и жестах</string>
+    <string name="theme_auto">Авто</string>
+    <string name="theme_light">Светлая</string>
+    <string name="theme_dark">Тёмная</string>
+    <string name="theme_oled">OLED</string>
+    <string name="language_section_title">Язык приложения</string>
+    <string name="language_system">Системный</string>
+    <string name="language_ru">Русский</string>
+    <string name="language_en">English</string>
+    <string name="backup_section_title">Резервное копирование</string>
+    <string name="export_json_title">Экспорт в JSON</string>
+    <string name="export_json_subtitle">Сохранить резервную копию карт</string>
+    <string name="import_json_title">Импорт из JSON</string>
+    <string name="import_json_subtitle">Восстановить карты из файла</string>
+    <string name="categories_section_title">Категории карт</string>
+    <string name="add_category_action">Добавить</string>
+    <string name="new_category_title">Новая категория</string>
+    <string name="category_name_label">Название</string>
+    <string name="category_icon_label">Иконка</string>
+    <string name="create_action">Создать</string>
+    <string name="delete_category_action">Удалить категорию</string>
+
+    <!-- Predefined category names -->
+    <string name="cat_supermarkets">Супермаркеты</string>
+    <string name="cat_clothing">Одежда и обувь</string>
+    <string name="cat_pharmacy">Аптеки</string>
+    <string name="cat_gas">АЗС</string>
+    <string name="cat_restaurants">Рестораны</string>
+    <string name="cat_electronics">Электроника</string>
+    <string name="cat_entertainment">Развлечения</string>
+    <string name="cat_gifts">Подарки</string>
+    <string name="cat_fitness">Спорт</string>
+    <string name="cat_cafe">Кафе</string>
+
+    <!-- Scanner -->
+    <string name="camera_permission_title">Требуется доступ к камере</string>
+    <string name="camera_permission_subtitle">Разрешите доступ к камере для автоматического считывания кодов</string>
+    <string name="grant_permission_action">Предоставить доступ</string>
+    <string name="gallery_action">Галерея</string>
+    <string name="files_action">Файлы</string>
+    <string name="torch_action">Фонарик</string>
+    <string name="barcode_recognition_toast">Распознавание…</string>
+    <string name="barcode_not_found_toast">Штрихкод на изображении не обнаружен</string>
+
+    <!-- Toasts & Validation -->
+    <string name="export_success_toast">Экспортировано карт: %1$d</string>
+    <string name="import_success_toast">Импортировано карт: %1$d</string>
+    <string name="category_added_toast">Категория «%1$s» добавлена</string>
+    <string name="category_deleted_toast">Категория удалена</string>
+    <string name="validation_title_empty">Введите название карты или магазина</string>
+    <string name="validation_code_empty">Введите номер или код карты</string>
+
+    <!-- Security & Lock Screen -->
+    <string name="security_section_title">Безопасность и приватность</string>
+    <string name="app_lock_title">Защита приложения</string>
+    <string name="app_lock_subtitle">Биометрия или PIN при входе</string>
+    <string name="lock_timeout_title">Таймаут автоблокировки</string>
+    <string name="lock_timeout_immediately">Сразу</string>
+    <string name="lock_timeout_1min">1 мин</string>
+    <string name="lock_timeout_5min">5 мин</string>
+    <string name="recent_apps_title">Скрытие в «Недавних»</string>
+    <string name="recent_apps_subtitle">Запрет скриншотов и превью приложения</string>
+    <string name="privacy_mode_title">Режим приватности</string>
+    <string name="privacy_mode_subtitle">Скрывать номера карт до нажатия</string>
+    <string name="lock_screen_title">Cardify заблокирован</string>
+    <string name="lock_screen_subtitle">Подтвердите личность для доступа к кошельку</string>
+    <string name="unlock_button_action">Разблокировать</string>
+
+    <!-- Sorting & Layout -->
+    <string name="sort_alphabetical">По алфавиту (A-Z)</string>
+    <string name="sort_date_added">По дате добавления</string>
+    <string name="sort_frequency">По частоте использования</string>
+    <string name="layout_full_cards">Большие карты</string>
+    <string name="layout_list_rows">Компактные строки</string>
+    <string name="layout_grid_2col">Сетка 2 столбца</string>
+    <string name="add_favorite">В избранное</string>
+    <string name="remove_favorite">Из избранного</string>
+</resources>
