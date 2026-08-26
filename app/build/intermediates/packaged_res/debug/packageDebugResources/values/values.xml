@@ -42,8 +42,8 @@
             A==
         </item>
     </string-array>
-    <color name="ic_launcher_background">#0F141A</color>
-    <color name="primary">#7B8CDE</color>
+    <color name="ic_launcher_background">#0B0F19</color>
+    <color name="primary">#4F46E5</color>
     <string name="add_card_action">Добавить карту</string>
     <string name="add_category_action">Добавить</string>
     <string name="add_favorite">В избранное</string>

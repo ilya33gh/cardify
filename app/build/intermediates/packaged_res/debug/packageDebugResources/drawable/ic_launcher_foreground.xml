@@ -1,12 +1,53 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+
+    <!-- Card Loop Base (C shape) -->
     <path
-        android:fillColor="#4D88FF"
-        android:pathData="M24,36h60c4.4,0 8,3.6 8,8v24c0,4.4 -3.6,8 -8,8H24c-4.4,0 -8,-3.6 -8,-8V44c0,-4.4 3.6,-8 8,-8z" />
+        android:pathData="M 44,28 L 76,28 C 80.4,28 84,31.6 84,36 C 84,40.4 80.4,44 76,44 L 46,44 C 40.5,44 36,48.5 36,54 C 36,59.5 40.5,64 46,64 L 76,64 C 80.4,64 84,67.6 84,72 C 84,76.4 80.4,80 76,80 L 44,80 C 29.6,80 18,68.4 18,54 C 18,39.6 29.6,28 44,28 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="18"
+                android:startY="28"
+                android:endX="84"
+                android:endY="80"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#6366F1" />
+                <item android:offset="0.45" android:color="#4F46E5" />
+                <item android:offset="1.0" android:color="#00D2FF" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Top Card Glass / Highlight Layer -->
     <path
+        android:pathData="M 34,34 C 34,30.7 36.7,28 40,28 L 76,28 C 80.4,28 84,31.6 84,36 C 84,40.4 80.4,44 76,44 L 46,44 C 39.4,44 34,39.5 34,34 Z"
+        android:fillAlpha="0.18"
+        android:fillColor="#FFFFFF" />
+
+    <!-- Mini stylized barcode bars inside upper card -->
+    <path
+        android:pathData="M 52,33 L 54.5,33 L 54.5,39 L 52,39 Z"
         android:fillColor="#FFFFFF"
-        android:pathData="M32,48h6v16h-6zM42,48h4v16h-4zM50,48h8v16h-8zM62,48h4v16h-4zM70,48h6v16h-6z" />
+        android:fillAlpha="0.85" />
+    <path
+        android:pathData="M 57,33 L 58.5,33 L 58.5,39 L 57,39 Z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.85" />
+    <path
+        android:pathData="M 61,33 L 64.5,33 L 64.5,39 L 61,39 Z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.85" />
+    <path
+        android:pathData="M 67,33 L 68.5,33 L 68.5,39 L 67,39 Z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.85" />
+
+    <!-- Bottom Card Accent Dot (Vivid Mint) -->
+    <path
+        android:pathData="M 74,72 m -3.5,0 a 3.5,3.5 0 1,0 7,0 a 3.5,3.5 0 1,0 -7,0"
+        android:fillColor="#00E676" />
 </vector>
