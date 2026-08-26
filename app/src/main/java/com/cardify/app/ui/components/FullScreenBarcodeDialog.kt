@@ -331,16 +331,6 @@ fun FullScreenBarcodeDialog(
                             )
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = stringResource(R.string.tap_to_close_hint),
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontFamily = InterFamily,
-                            color = Color(0xFF888888)
-                        )
-                    )
                 }
             }
         }
