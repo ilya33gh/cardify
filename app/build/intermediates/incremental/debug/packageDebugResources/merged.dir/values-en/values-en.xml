@@ -58,6 +58,7 @@
     <string name="export_success_toast">Exported %1$d cards</string>
     <string name="favorites_tab">Favorites</string>
     <string name="files_action">Files</string>
+    <string name="fullscreen_barcode_hint">Tap for full screen</string>
     <string name="gallery_action">Gallery</string>
     <string name="grant_permission_action">Grant permission</string>
     <string name="haptic_feedback_subtitle">Vibration on taps and gestures</string>
@@ -102,6 +103,7 @@
     <string name="sort_alphabetical">Alphabetical (A-Z)</string>
     <string name="sort_date_added">Date added</string>
     <string name="sort_frequency">Most used</string>
+    <string name="tap_to_close_hint">Tap anywhere to close</string>
     <string name="theme_auto">Auto</string>
     <string name="theme_dark">Dark</string>
     <string name="theme_light">Light</string>

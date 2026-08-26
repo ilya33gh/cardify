@@ -67,6 +67,7 @@ string export_json_title
 string export_success_toast
 string favorites_tab
 string files_action
+string fullscreen_barcode_hint
 string gallery_action
 string grant_permission_action
 string haptic_feedback_subtitle
@@ -111,6 +112,7 @@ string share_title
 string sort_alphabetical
 string sort_date_added
 string sort_frequency
+string tap_to_close_hint
 string theme_auto
 string theme_dark
 string theme_light

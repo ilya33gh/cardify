@@ -37,6 +37,7 @@ import com.cardify.app.domain.model.LoyaltyCard
 import com.cardify.app.ui.components.AnimatedFavoriteIconButton
 import com.cardify.app.ui.components.BarcodeDisplay
 import com.cardify.app.ui.components.ExpressiveBrightnessSlider
+import com.cardify.app.ui.components.FullScreenBarcodeDialog
 import com.cardify.app.ui.components.getLocalizedCategoryRes
 import com.cardify.app.ui.components.rememberHapticHelper
 import com.cardify.app.ui.theme.*
@@ -54,6 +55,7 @@ fun CardDetailSheet(
     val isDark = isSystemInDarkTheme()
     val hapticHelper = rememberHapticHelper()
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showFullScreenBarcode by remember { mutableStateOf(false) }
 
     LaunchedEffect(showDeleteConfirm) {
         if (showDeleteConfirm) {
@@ -202,12 +204,16 @@ fun CardDetailSheet(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Barcode Display Surface (Holds barcode image & formatted number inside)
+            // Barcode Display Surface (Holds barcode image & formatted number inside) - Tapping opens Fullscreen POS Mode
             BarcodeDisplay(
                 value = card.barcodeValue,
                 format = card.barcodeFormat,
                 shape = RoundedCornerShape(20.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    hapticHelper.performClick()
+                    showFullScreenBarcode = true
+                }
             )
 
             Spacer(modifier = Modifier.height(22.dp))
@@ -489,6 +495,14 @@ fun CardDetailSheet(
                     )
                 }
             }
+        )
+    }
+
+    // Fullscreen Barcode POS Overlay Dialog
+    if (showFullScreenBarcode) {
+        FullScreenBarcodeDialog(
+            card = card,
+            onDismiss = { showFullScreenBarcode = false }
         )
     }
 }

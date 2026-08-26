@@ -21,6 +21,11 @@ import com.cardify.app.barcode.BarcodeGenerator
 import com.cardify.app.data.local.entities.BarcodeFormatEnum
 import kotlinx.coroutines.delay
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Fullscreen
+
 @Composable
 fun BarcodeDisplay(
     value: String,
@@ -28,7 +33,8 @@ fun BarcodeDisplay(
     modifier: Modifier = Modifier,
     showValueText: Boolean = true,
     containerColor: Color = Color.White,
-    shape: Shape = RoundedCornerShape(16.dp)
+    shape: Shape = RoundedCornerShape(16.dp),
+    onClick: (() -> Unit)? = null
 ) {
     var bitmap by remember(value, format) { mutableStateOf<Bitmap?>(null) }
     var errorMessage by remember(value, format) { mutableStateOf<String?>(null) }
@@ -52,73 +58,102 @@ fun BarcodeDisplay(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clip(shape),
+            .clip(shape)
+            .then(
+                if (onClick != null) {
+                    Modifier.clickable(onClick = onClick)
+                } else {
+                    Modifier
+                }
+            ),
         color = containerColor,
         shape = shape,
         tonalElevation = 0.dp,
         shadowElevation = 0.dp
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            if (isLoading) {
-                Box(
-                    modifier = Modifier
-                        .height(if (format.is2D) 200.dp else 105.dp)
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(32.dp),
-                        strokeWidth = 3.dp,
-                        color = Color(0xFF1E1E1E)
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                if (isLoading) {
+                    Box(
+                        modifier = Modifier
+                            .height(if (format.is2D) 200.dp else 105.dp)
+                            .fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(32.dp),
+                            strokeWidth = 3.dp,
+                            color = Color(0xFF1E1E1E)
+                        )
+                    }
+                } else if (bitmap != null) {
+                    Image(
+                        bitmap = bitmap!!.asImageBitmap(),
+                        contentDescription = "Barcode $value",
+                        modifier = Modifier
+                            .fillMaxWidth(if (format.is2D) 0.78f else 1f)
+                            .height(if (format.is2D) 200.dp else 105.dp),
+                        contentScale = if (format.is2D) ContentScale.Fit else ContentScale.FillBounds
                     )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .height(if (format.is2D) 200.dp else 105.dp)
+                            .fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = errorMessage ?: "Не удалось сгенерировать штрихкод",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
                 }
-            } else if (bitmap != null) {
-                Image(
-                    bitmap = bitmap!!.asImageBitmap(),
-                    contentDescription = "Barcode $value",
-                    modifier = Modifier
-                        .fillMaxWidth(if (format.is2D) 0.78f else 1f)
-                        .height(if (format.is2D) 200.dp else 105.dp),
-                    contentScale = if (format.is2D) ContentScale.Fit else ContentScale.FillBounds
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .height(if (format.is2D) 200.dp else 105.dp)
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
+
+                if (showValueText && value.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = errorMessage ?: "Не удалось сгенерировать штрихкод",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium
+                        text = formatCardNumber(value, format),
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.5.sp
+                        ),
+                        color = Color.Black
                     )
                 }
             }
 
-            if (showValueText && value.isNotBlank()) {
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = formatCardNumber(value, format),
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.5.sp
-                    ),
-                    color = Color.Black
-                )
+            if (onClick != null && !isLoading && bitmap != null) {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color.Black.copy(alpha = 0.05f),
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .size(28.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Outlined.Fullscreen,
+                            contentDescription = "Full Screen",
+                            tint = Color.Black.copy(alpha = 0.5f),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
             }
         }
     }
 }
 
-private fun formatCardNumber(value: String, format: BarcodeFormatEnum): String {
+fun formatCardNumber(value: String, format: BarcodeFormatEnum): String {
     if (format.is2D || value.length > 24) return value
     return value.chunked(4).joinToString(" ")
 }

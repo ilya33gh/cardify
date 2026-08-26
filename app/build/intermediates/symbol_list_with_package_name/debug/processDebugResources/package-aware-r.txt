@@ -1122,6 +1122,7 @@ string fingerprint_error_user_canceled
 string fingerprint_not_recognized
 string fingerprint_or_screen_lock_prompt_message
 string fingerprint_prompt_message
+string fullscreen_barcode_hint
 string gallery_action
 string generic_error_no_device_credential
 string generic_error_no_keyguard
@@ -1241,6 +1242,7 @@ string state_on
 string status_bar_notification_info_overflow
 string switch_role
 string tab
+string tap_to_close_hint
 string template_percent
 string theme_auto
 string theme_dark
