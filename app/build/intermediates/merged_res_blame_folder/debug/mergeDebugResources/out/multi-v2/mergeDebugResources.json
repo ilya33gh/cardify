@@ -2914,6 +2914,21 @@
             ]
         },
         {
+            "outputFile": "C:\\Users\\shumi\\.gradle\\daemon\\8.11.1\\com.cardify.app-debug-74:\\values-ldltr-v21_values-ldltr-v21.arsc.flat",
+            "map": [
+                {
+                    "source": "C:\\Users\\shumi\\.gradle\\caches\\8.11.1\\transforms\\d7aee0f961c1a27f94280f5a7cd37a0a\\transformed\\appcompat-1.7.0\\res\\values-ldltr-v21\\values-ldltr-v21.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "112",
+                        "endOffsets": "163"
+                    }
+                }
+            ]
+        },
+        {
             "outputFile": "C:\\Users\\shumi\\.gradle\\daemon\\8.11.1\\com.cardify.app-debug-74:\\values-am_values-am.arsc.flat",
             "map": [
                 {
@@ -3050,21 +3065,6 @@
                         "startOffsets": "8180,8291,8401,8509,8616,8710,8800,8907,9035,9145,9274,9356,9454,9541,9634,9744,9863,9966,10089,10214,10338,10486,10602,10715,10829,10944,11032,11127,11237,11356,11451,11553,11655,11775,11901,12005,12101,12175,12268,12360,12459,12543,12628,12730,12811,12894,12994,13091,13186,13281,13366,13468,13567,13666,13784,13865,13966",
                         "endColumns": "110,109,107,106,93,89,106,127,109,128,81,97,86,92,109,118,102,122,124,123,147,115,112,113,114,87,94,109,118,94,101,101,119,125,103,95,73,92,91,98,83,84,101,80,82,99,96,94,94,84,101,98,98,117,80,100,96",
                         "endOffsets": "8286,8396,8504,8611,8705,8795,8902,9030,9140,9269,9351,9449,9536,9629,9739,9858,9961,10084,10209,10333,10481,10597,10710,10824,10939,11027,11122,11232,11351,11446,11548,11650,11770,11896,12000,12096,12170,12263,12355,12454,12538,12623,12725,12806,12889,12989,13086,13181,13276,13361,13463,13562,13661,13779,13860,13961,14058"
-                    }
-                }
-            ]
-        },
-        {
-            "outputFile": "C:\\Users\\shumi\\.gradle\\daemon\\8.11.1\\com.cardify.app-debug-74:\\values-ldltr-v21_values-ldltr-v21.arsc.flat",
-            "map": [
-                {
-                    "source": "C:\\Users\\shumi\\.gradle\\caches\\8.11.1\\transforms\\d7aee0f961c1a27f94280f5a7cd37a0a\\transformed\\appcompat-1.7.0\\res\\values-ldltr-v21\\values-ldltr-v21.xml",
-                    "from": {
-                        "startLines": "2",
-                        "startColumns": "4",
-                        "startOffsets": "55",
-                        "endColumns": "112",
-                        "endOffsets": "163"
                     }
                 }
             ]
@@ -3897,22 +3897,6 @@
             ]
         },
         {
-            "outputFile": "C:\\Users\\shumi\\.gradle\\daemon\\8.11.1\\com.cardify.app-debug-74:\\values-v28_values-v28.arsc.flat",
-            "map": [
-                {
-                    "source": "C:\\Users\\shumi\\.gradle\\caches\\8.11.1\\transforms\\d7aee0f961c1a27f94280f5a7cd37a0a\\transformed\\appcompat-1.7.0\\res\\values-v28\\values-v28.xml",
-                    "from": {
-                        "startLines": "2,3,4,8",
-                        "startColumns": "4,4,4,4",
-                        "startOffsets": "55,130,217,397",
-                        "endLines": "2,3,7,11",
-                        "endColumns": "74,86,12,12",
-                        "endOffsets": "125,212,392,584"
-                    }
-                }
-            ]
-        },
-        {
             "outputFile": "C:\\Users\\shumi\\.gradle\\daemon\\8.11.1\\com.cardify.app-debug-74:\\values-is_values-is.arsc.flat",
             "map": [
                 {
@@ -4049,6 +4033,22 @@
                         "startOffsets": "105,205,302,414,499,600,714,795,874,965,1058,1151,1245,1351,1444,1539,1634,1725,1819,1900,2010,2117,2214,2323,2423,2526,2681,15270",
                         "endColumns": "99,96,111,84,100,113,80,78,90,92,92,93,105,92,94,94,90,93,80,109,106,96,108,99,102,154,97,80",
                         "endOffsets": "200,297,409,494,595,709,790,869,960,1053,1146,1240,1346,1439,1534,1629,1720,1814,1895,2005,2112,2209,2318,2418,2521,2676,2774,15346"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "C:\\Users\\shumi\\.gradle\\daemon\\8.11.1\\com.cardify.app-debug-74:\\values-v28_values-v28.arsc.flat",
+            "map": [
+                {
+                    "source": "C:\\Users\\shumi\\.gradle\\caches\\8.11.1\\transforms\\d7aee0f961c1a27f94280f5a7cd37a0a\\transformed\\appcompat-1.7.0\\res\\values-v28\\values-v28.xml",
+                    "from": {
+                        "startLines": "2,3,4,8",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "55,130,217,397",
+                        "endLines": "2,3,7,11",
+                        "endColumns": "74,86,12,12",
+                        "endOffsets": "125,212,392,584"
                     }
                 }
             ]
