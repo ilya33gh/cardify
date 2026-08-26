@@ -1,0 +1,59 @@
+# Built application files
+*.apk
+*.aar
+*.ap_
+*.aab
+
+# Files for the ART/DALVIK VM
+*.dex
+
+# Java class files
+*.class
+
+# Generated build directories
+bin/
+gen/
+out/
+build/
+app/build/
+.kotlin/
+.gradle/
+*/build/
+
+# Gradle wrapper
+!.gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.jar
+
+# Android Studio / IntelliJ IDEA files
+.idea/
+*.iml
+*.iws
+*.ipr
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navFolder.xml
+.idea/assetWizardSettings.xml
+.idea/caches/
+.idea/libraries/
+captures/
+
+# Local configuration files & environment keys
+local.properties
+.env
+.env.local
+.env.*.local
+
+# Keystores & Release Signing Keys
+*.jks
+*.keystore
+*.p12
+*.pepk
+release-key.properties
+
+# Android Profiler & Logs
+*.log
+*.hprof
+
+# OS generated files
+.DS_Store
+Thumbs.db

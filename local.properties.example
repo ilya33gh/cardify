@@ -1,0 +1,14 @@
+## Local Configuration Example for Cardify
+## Copy this file to `local.properties` in the root directory.
+
+# Location of the Android SDK. This is specific to the local machine.
+# Windows Example: sdk.dir=C\:\\Users\\YourUsername\\AppData\\Local\\Android\\Sdk
+# macOS Example:   sdk.dir=/Users/YourUsername/Library/Android/sdk
+# Linux Example:   sdk.dir=/home/YourUsername/Android/Sdk
+sdk.dir=YOUR_ANDROID_SDK_PATH
+
+# (Optional) Release signing configurations if building release APKs
+# KEYSTORE_PATH=path/to/your/release-key.jks
+# KEYSTORE_PASSWORD=your_keystore_password
+# KEY_ALIAS=your_key_alias
+# KEY_PASSWORD=your_key_password
