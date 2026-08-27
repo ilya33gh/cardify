@@ -63,9 +63,7 @@ fun CardDetailSheet(
         }
     }
 
-    val baseCardColor = remember(card.colorHex) {
-        CardColorPalette.getColor(card.colorHex)
-    }
+    val baseCardColor = CardColorPalette.getHarmonizedColor(card.colorHex)
 
     val surfaceContainerColor = MaterialTheme.colorScheme.surfaceContainerLow
     val isOled = MaterialTheme.colorScheme.surface == Color.Black
@@ -79,47 +77,6 @@ fun CardDetailSheet(
             val blendFraction = if (isDark) 0.88f else 0.92f
             Color(ColorUtils.blendARGB(baseCardColor.toArgb(), targetArgb, blendFraction))
         }
-    }
-
-    // High Contrast, Distinct Card-Dependent Action Buttons (Never blending with sheet background)
-    val copyButtonBg = remember(baseCardColor, isDark) {
-        val targetRole = if (isDark) android.graphics.Color.parseColor("#172E54") else android.graphics.Color.parseColor("#D3E3FD")
-        Color(ColorUtils.blendARGB(baseCardColor.toArgb(), targetRole, 0.65f))
-    }
-    val copyButtonContent = remember(baseCardColor, isDark) {
-        if (isDark) Color(0xFFDBE8FE) else Color(0xFF041E49)
-    }
-
-    val shareButtonBg = remember(baseCardColor, isDark) {
-        val targetRole = if (isDark) android.graphics.Color.parseColor("#0E3B36") else android.graphics.Color.parseColor("#CCF8F0")
-        Color(ColorUtils.blendARGB(baseCardColor.toArgb(), targetRole, 0.65f))
-    }
-    val shareButtonContent = remember(baseCardColor, isDark) {
-        if (isDark) Color(0xFFCCFBF1) else Color(0xFF043832)
-    }
-
-    val editButtonBg = remember(baseCardColor, isDark) {
-        val targetRole = if (isDark) android.graphics.Color.parseColor("#3C1852") else android.graphics.Color.parseColor("#F3E0FD")
-        Color(ColorUtils.blendARGB(baseCardColor.toArgb(), targetRole, 0.65f))
-    }
-    val editButtonContent = remember(baseCardColor, isDark) {
-        if (isDark) Color(0xFFF3E8FF) else Color(0xFF3B0764)
-    }
-
-    val deleteButtonBg = remember(baseCardColor, isDark) {
-        val targetRole = if (isDark) android.graphics.Color.parseColor("#501923") else android.graphics.Color.parseColor("#FCE0E3")
-        Color(ColorUtils.blendARGB(baseCardColor.toArgb(), targetRole, 0.65f))
-    }
-    val deleteButtonContent = remember(baseCardColor, isDark) {
-        if (isDark) Color(0xFFFFE4E6) else Color(0xFF881337)
-    }
-
-    // Split Button Geometries: 0dp inner corner radius on joining seam!
-    val leftSegmentShape = remember {
-        RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp, topEnd = 0.dp, bottomEnd = 0.dp)
-    }
-    val rightSegmentShape = remember {
-        RoundedCornerShape(topStart = 0.dp, bottomStart = 0.dp, topEnd = 20.dp, bottomEnd = 20.dp)
     }
 
     val windowSizeInfo = MaterialThemeAdaptive
@@ -220,188 +177,6 @@ fun CardDetailSheet(
                 }
             )
 
-            Spacer(modifier = Modifier.height(22.dp))
-
-            val copiedToastText = stringResource(R.string.copied_toast)
-            val shareTitleText = stringResource(R.string.share_title)
-
-            // Row 1: Copy & Share Split Button Pair (0dp seam corner radius)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp),
-                horizontalArrangement = Arrangement.spacedBy(3.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Copy Segment (Left)
-                Surface(
-                    onClick = {
-                        hapticHelper.performClick()
-                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        val clip = ClipData.newPlainText("Cardify Code", card.barcodeValue)
-                        clipboard.setPrimaryClip(clip)
-                        Toast.makeText(context, copiedToastText, Toast.LENGTH_SHORT).show()
-                    },
-                    shape = leftSegmentShape,
-                    color = copyButtonBg,
-                    contentColor = copyButtonContent,
-                    shadowElevation = 0.dp,
-                    tonalElevation = 0.dp,
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(Icons.Outlined.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp), tint = copyButtonContent)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.copy_action),
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontFamily = OnestFamily,
-                                fontWeight = FontWeight.Bold
-                            ),
-                            color = copyButtonContent,
-                            maxLines = 1,
-                            softWrap = false
-                        )
-                    }
-                }
-
-                // Share Segment (Right)
-                Surface(
-                    onClick = {
-                        hapticHelper.performClick()
-                        val sendIntent = Intent().apply {
-                            action = Intent.ACTION_SEND
-                            putExtra(Intent.EXTRA_TEXT, "${card.title}: ${card.barcodeValue}")
-                            type = "text/plain"
-                        }
-                        context.startActivity(Intent.createChooser(sendIntent, shareTitleText))
-                    },
-                    shape = rightSegmentShape,
-                    color = shareButtonBg,
-                    contentColor = shareButtonContent,
-                    shadowElevation = 0.dp,
-                    tonalElevation = 0.dp,
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.size(18.dp), tint = shareButtonContent)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.share_action),
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontFamily = OnestFamily,
-                                fontWeight = FontWeight.Bold
-                            ),
-                            color = shareButtonContent,
-                            maxLines = 1,
-                            softWrap = false
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Row 2: Edit & Delete Split Button Pair (0dp seam corner radius)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp),
-                horizontalArrangement = Arrangement.spacedBy(3.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Edit Segment (Left)
-                Surface(
-                    onClick = {
-                        hapticHelper.performClick()
-                        onDismiss()
-                        onEditCard(card.id)
-                    },
-                    shape = leftSegmentShape,
-                    color = editButtonBg,
-                    contentColor = editButtonContent,
-                    shadowElevation = 0.dp,
-                    tonalElevation = 0.dp,
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(18.dp), tint = editButtonContent)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.edit_action),
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontFamily = OnestFamily,
-                                fontWeight = FontWeight.Bold
-                            ),
-                            color = editButtonContent,
-                            maxLines = 1,
-                            softWrap = false
-                        )
-                    }
-                }
-
-                // Delete Segment (Right)
-                Surface(
-                    onClick = {
-                        hapticHelper.performClick()
-                        showDeleteConfirm = true
-                    },
-                    shape = rightSegmentShape,
-                    color = deleteButtonBg,
-                    contentColor = deleteButtonContent,
-                    shadowElevation = 0.dp,
-                    tonalElevation = 0.dp,
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(18.dp), tint = deleteButtonContent)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.delete_action),
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontFamily = OnestFamily,
-                                fontWeight = FontWeight.Bold
-                            ),
-                            color = deleteButtonContent,
-                            maxLines = 1,
-                            softWrap = false
-                        )
-                    }
-                }
-            }
-
             // Optional Notes Section
             if (card.notes.isNotBlank()) {
                 Spacer(modifier = Modifier.height(14.dp))
@@ -441,10 +216,124 @@ fun CardDetailSheet(
                 }
             }
 
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Brightness Control Slider (Photo 6 Capsule Design)
+            ExpressiveBrightnessSlider(modifier = Modifier.fillMaxWidth())
+
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Brightness Control Slider (Expressive capsule matching photo reference)
-            ExpressiveBrightnessSlider(modifier = Modifier.fillMaxWidth())
+            val copiedToastText = stringResource(R.string.copied_toast)
+            val shareTitleText = stringResource(R.string.share_title)
+
+            // Centered Floating Bottom Action Bar (Photo 5: Enlarged, Centered)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Left Pill Container: Action icons (Copy, Share, Edit) with fixed compact spacing
+                Surface(
+                    modifier = Modifier.height(68.dp),
+                    shape = PillShape,
+                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.75f),
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    tonalElevation = 1.dp
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .padding(horizontal = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Copy Action
+                        IconButton(
+                            onClick = {
+                                hapticHelper.performClick()
+                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                val clip = ClipData.newPlainText("Cardify Code", card.barcodeValue)
+                                clipboard.setPrimaryClip(clip)
+                                Toast.makeText(context, copiedToastText, Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.size(56.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.ContentCopy,
+                                contentDescription = stringResource(R.string.copy_action),
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+
+                        // Share Action
+                        IconButton(
+                            onClick = {
+                                hapticHelper.performClick()
+                                val sendIntent = Intent().apply {
+                                    action = Intent.ACTION_SEND
+                                    putExtra(Intent.EXTRA_TEXT, "${card.title}: ${card.barcodeValue}")
+                                    type = "text/plain"
+                                }
+                                context.startActivity(Intent.createChooser(sendIntent, shareTitleText))
+                            },
+                            modifier = Modifier.size(56.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Share,
+                                contentDescription = stringResource(R.string.share_action),
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+
+                        // Edit Action (Keeps Detail Sheet open so it persists when returning from editing)
+                        IconButton(
+                            onClick = {
+                                hapticHelper.performClick()
+                                onEditCard(card.id)
+                            },
+                            modifier = Modifier.size(56.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Edit,
+                                contentDescription = stringResource(R.string.edit_action),
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // Right Dedicated Delete Button (Photo 5: Monet Error Red Container)
+                Surface(
+                    onClick = {
+                        hapticHelper.performClick()
+                        showDeleteConfirm = true
+                    },
+                    modifier = Modifier.size(68.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    tonalElevation = 2.dp
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Delete,
+                            contentDescription = stringResource(R.string.delete_action),
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
+                }
+            }
         }
     }
 

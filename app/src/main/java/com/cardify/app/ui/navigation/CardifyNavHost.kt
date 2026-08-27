@@ -7,12 +7,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
 import com.cardify.app.data.repository.BackupRepository
 import com.cardify.app.data.repository.CardRepository
@@ -57,10 +59,15 @@ fun CardifyNavHost(
         factory = SettingsViewModel.Factory(categoryRepository, backupRepository)
     )
 
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    val isWalletTop = currentRoute == null || currentRoute == NavRoute.Wallet.route
+
     Box(modifier = modifier.fillMaxSize()) {
         // Base Layer: WalletScreen is permanently rendered underneath sub-screens
         WalletScreen(
             viewModel = walletViewModel,
+            isWalletTop = isWalletTop,
             onNavigateToScanner = { navController.navigateDebounced(NavRoute.Scanner.route) },
             onNavigateToAddCard = { navController.navigateDebounced(NavRoute.AddCard.createRoute()) },
             onNavigateToEditCard = { cardId -> navController.navigateDebounced(NavRoute.EditCard.createRoute(cardId)) },

@@ -117,9 +117,7 @@ fun ExpressiveLoyaltyCard(
         label = "cardScale"
     )
 
-    val solidCardColor = remember(card.colorHex) {
-        CardColorPalette.getColor(card.colorHex)
-    }
+    val solidCardColor = CardColorPalette.getHarmonizedColor(card.colorHex)
 
     val storeInitial = remember(card.title) {
         card.title.trim().take(1).uppercase()
@@ -312,8 +310,33 @@ fun ExpressiveLoyaltyCard(
     }
 }
 
+fun getGroupedShape(
+    index: Int,
+    count: Int,
+    cornerRadius: androidx.compose.ui.unit.Dp = 22.dp,
+    microCorner: androidx.compose.ui.unit.Dp = 5.dp
+): Shape {
+    return when {
+        count <= 1 -> RoundedCornerShape(cornerRadius)
+        index == 0 -> RoundedCornerShape(
+            topStart = cornerRadius,
+            topEnd = cornerRadius,
+            bottomStart = microCorner,
+            bottomEnd = microCorner
+        )
+        index == count - 1 -> RoundedCornerShape(
+            topStart = microCorner,
+            topEnd = microCorner,
+            bottomStart = cornerRadius,
+            bottomEnd = cornerRadius
+        )
+        else -> RoundedCornerShape(microCorner)
+    }
+}
+
 /**
- * Compact Horizontal List Row View for Loyalty Cards (Google Wallet Row Style)
+ * Material 3 Expressive Grouped Card Row (Photo 4 Stacked Style)
+ * Supports dynamic Pixel UI micro-rounded corner shapes based on position in group.
  */
 @Composable
 fun ExpressiveLoyaltyCardRow(
@@ -321,7 +344,9 @@ fun ExpressiveLoyaltyCardRow(
     onClick: () -> Unit,
     onLongClick: (androidx.compose.ui.geometry.Offset) -> Unit = {},
     modifier: Modifier = Modifier,
-    searchQuery: String = ""
+    searchQuery: String = "",
+    index: Int = 0,
+    totalCount: Int = 1
 ) {
     var isPressed by remember { mutableStateOf(false) }
 
@@ -331,12 +356,14 @@ fun ExpressiveLoyaltyCardRow(
         label = "rowScale"
     )
 
-    val solidCardColor = remember(card.colorHex) {
-        CardColorPalette.getColor(card.colorHex)
-    }
+    val solidCardColor = CardColorPalette.getHarmonizedColor(card.colorHex)
 
     val storeInitial = remember(card.title) {
         card.title.trim().take(1).uppercase()
+    }
+
+    val rowShape = remember(index, totalCount) {
+        getGroupedShape(index, totalCount, cornerRadius = 24.dp, microCorner = 5.dp)
     }
 
     Surface(
@@ -354,28 +381,32 @@ fun ExpressiveLoyaltyCardRow(
                     onLongPress = { offset -> onLongClick(offset) }
                 )
             },
-        shape = ExpressiveRowCardShape,
+        shape = rowShape,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
-        contentColor = MaterialTheme.colorScheme.onSurface
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = 1.dp
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            // Expressive Scalloped / Squircle Monogram Badge (Photo 4)
             Surface(
-                shape = CircleShape,
+                shape = RoundedCornerShape(16.dp),
                 color = solidCardColor,
-                modifier = Modifier.size(42.dp)
+                modifier = Modifier.size(46.dp),
+                shadowElevation = 0.dp
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
                         text = storeInitial,
-                        style = MaterialTheme.typography.titleMedium.copy(
+                        style = MaterialTheme.typography.titleLarge.copy(
                             fontFamily = OnestFamily,
                             fontWeight = FontWeight.Black,
+                            fontSize = 20.sp,
                             color = Color.White
                         )
                     )
@@ -390,14 +421,17 @@ fun ExpressiveLoyaltyCardRow(
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
                     ),
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = buildHighlightedText(card.barcodeValue, searchQuery),
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontFamily = OnestFamily,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 13.5.sp
                     ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -465,9 +499,7 @@ fun ExpressiveLoyaltyCardGrid(
         label = "gridScale"
     )
 
-    val solidCardColor = remember(card.colorHex) {
-        CardColorPalette.getColor(card.colorHex)
-    }
+    val solidCardColor = CardColorPalette.getHarmonizedColor(card.colorHex)
 
     val storeInitial = remember(card.title) {
         card.title.trim().take(1).uppercase()
@@ -762,8 +794,9 @@ data class SegmentItem<T>(
 )
 
 /**
- * Material 3 Expressive Larger Settings Segmented Switcher
- * Features distinct outer corner rounding, rectangular middle items, and smooth shape morphing.
+ * Material 3 Expressive Segmented Switcher (Photo 3 Geometry & Monet Integration)
+ * Selected item is an independent full capsule pill with checkmark and dynamic Monet primary color.
+ * Inactive items have micro-rounded inner corners (6.dp) with soft Monet surfaceContainerHighest tint.
  */
 @Composable
 fun <T> M3SettingsSegmentedSwitcher(
@@ -775,137 +808,112 @@ fun <T> M3SettingsSegmentedSwitcher(
 ) {
     val hapticHelper = rememberHapticHelper()
 
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-        border = null
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(6.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            val count = items.size
-            items.forEachIndexed { index, item ->
-                val isSelected = item.value == selectedValue
+        val count = items.size
+        items.forEachIndexed { index, item ->
+            val isSelected = item.value == selectedValue
 
-                // Dynamic Smooth Shape Morphing
-                val topStartRadius by animateDpAsState(
-                    targetValue = when {
-                        index == 0 -> if (isSelected) 26.dp else 24.dp
-                        else -> if (isSelected) 10.dp else 6.dp
-                    },
-                    animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                    label = "topStartRadius"
-                )
-                val bottomStartRadius by animateDpAsState(
-                    targetValue = when {
-                        index == 0 -> if (isSelected) 26.dp else 24.dp
-                        else -> if (isSelected) 10.dp else 6.dp
-                    },
-                    animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                    label = "bottomStartRadius"
-                )
-                val topEndRadius by animateDpAsState(
-                    targetValue = when {
-                        index == count - 1 -> if (isSelected) 26.dp else 24.dp
-                        else -> if (isSelected) 10.dp else 6.dp
-                    },
-                    animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                    label = "topEndRadius"
-                )
-                val bottomEndRadius by animateDpAsState(
-                    targetValue = when {
-                        index == count - 1 -> if (isSelected) 26.dp else 24.dp
-                        else -> if (isSelected) 10.dp else 6.dp
-                    },
-                    animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                    label = "bottomEndRadius"
-                )
+            // Animated micro-to-pill shape transition for 120 FPS fluid morphing
+            val topStartRadius by animateDpAsState(
+                targetValue = if (isSelected) 31.dp else if (index == 0) 24.dp else 6.dp,
+                animationSpec = spring<Dp>(dampingRatio = 0.7f, stiffness = Spring.StiffnessMediumLow),
+                label = "switcherTopStart"
+            )
+            val bottomStartRadius by animateDpAsState(
+                targetValue = if (isSelected) 31.dp else if (index == 0) 24.dp else 6.dp,
+                animationSpec = spring<Dp>(dampingRatio = 0.7f, stiffness = Spring.StiffnessMediumLow),
+                label = "switcherBottomStart"
+            )
+            val topEndRadius by animateDpAsState(
+                targetValue = if (isSelected) 31.dp else if (index == count - 1) 24.dp else 6.dp,
+                animationSpec = spring<Dp>(dampingRatio = 0.7f, stiffness = Spring.StiffnessMediumLow),
+                label = "switcherTopEnd"
+            )
+            val bottomEndRadius by animateDpAsState(
+                targetValue = if (isSelected) 31.dp else if (index == count - 1) 24.dp else 6.dp,
+                animationSpec = spring<Dp>(dampingRatio = 0.7f, stiffness = Spring.StiffnessMediumLow),
+                label = "switcherBottomEnd"
+            )
 
-                val segmentShape = remember(topStartRadius, bottomStartRadius, topEndRadius, bottomEndRadius) {
-                    RoundedCornerShape(
-                        topStart = topStartRadius,
-                        bottomStart = bottomStartRadius,
-                        topEnd = topEndRadius,
-                        bottomEnd = bottomEndRadius
-                    )
-                }
-
-                val containerColor by animateColorAsState(
-                    targetValue = if (isSelected)
-                        MaterialTheme.colorScheme.primary
-                    else
-                        Color.Transparent,
-                    animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
-                    label = "segmentContainerColor"
+            val segmentShape = remember(topStartRadius, bottomStartRadius, topEndRadius, bottomEndRadius) {
+                RoundedCornerShape(
+                    topStart = topStartRadius,
+                    bottomStart = bottomStartRadius,
+                    topEnd = topEndRadius,
+                    bottomEnd = bottomEndRadius
                 )
+            }
 
-                val contentColor by animateColorAsState(
-                    targetValue = if (isSelected)
-                        MaterialTheme.colorScheme.onPrimary
-                    else
-                        MaterialTheme.colorScheme.onSurfaceVariant,
-                    animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
-                    label = "segmentContentColor"
-                )
+            val containerColor by animateColorAsState(
+                targetValue = if (isSelected)
+                    MaterialTheme.colorScheme.primary
+                else
+                    MaterialTheme.colorScheme.surfaceContainerHighest,
+                animationSpec = spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessMediumLow),
+                label = "segmentContainerColor"
+            )
 
-                Surface(
-                    onClick = {
-                        hapticHelper.performClick()
-                        onSelect(item.value)
-                    },
+            val contentColor by animateColorAsState(
+                targetValue = if (isSelected)
+                    MaterialTheme.colorScheme.onPrimary
+                else
+                    MaterialTheme.colorScheme.onSurfaceVariant,
+                animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
+                label = "segmentContentColor"
+            )
+
+            Surface(
+                onClick = {
+                    hapticHelper.performClick()
+                    onSelect(item.value)
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(62.dp),
+                shape = segmentShape,
+                color = containerColor,
+                contentColor = contentColor,
+                tonalElevation = if (isSelected) 2.dp else 0.dp,
+                shadowElevation = 0.dp,
+                border = null
+            ) {
+                Row(
                     modifier = Modifier
-                        .weight(1f)
-                        .height(54.dp),
-                    shape = segmentShape,
-                    color = containerColor,
-                    contentColor = contentColor,
-                    border = null
+                        .fillMaxSize()
+                        .padding(horizontal = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        if (item.icon != null) {
-                            Icon(
-                                imageVector = item.icon,
-                                contentDescription = item.label,
-                                modifier = Modifier.size(20.dp),
-                                tint = contentColor
-                            )
-                            if (showLabels && item.label.isNotBlank()) {
-                                Spacer(modifier = Modifier.width(4.dp))
-                            }
-                        } else if (isSelected && showLabels) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = contentColor
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                        }
-
+                    if (item.icon != null) {
+                        Icon(
+                            imageVector = item.icon,
+                            contentDescription = item.label,
+                            modifier = Modifier.size(28.dp),
+                            tint = contentColor
+                        )
                         if (showLabels && item.label.isNotBlank()) {
-                            Text(
-                                text = item.label,
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = if (isSelected) FontWeight.Black else FontWeight.Bold,
-                                    fontSize = if (items.size >= 4) 13.sp else 13.5.sp
-                                ),
-                                color = contentColor,
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                            Spacer(modifier = Modifier.width(6.dp))
                         }
+                    }
+
+                    if (showLabels && item.label.isNotBlank()) {
+                        Text(
+                            text = item.label,
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 17.sp
+                            ),
+                            color = contentColor,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
             }
@@ -935,15 +943,15 @@ fun ExpressiveSplitButton(
         RoundedCornerShape(
             topStart = 34.dp,
             bottomStart = 34.dp,
-            topEnd = 12.dp,
-            bottomEnd = 12.dp
+            topEnd = 6.dp,
+            bottomEnd = 6.dp
         )
     }
 
     val rightShape = remember {
         RoundedCornerShape(
-            topStart = 12.dp,
-            bottomStart = 12.dp,
+            topStart = 6.dp,
+            bottomStart = 6.dp,
             topEnd = 34.dp,
             bottomEnd = 34.dp
         )
@@ -1331,7 +1339,7 @@ fun ColorPickerRow(
     ) {
         CardColorPalette.options.forEach { option ->
             val isSelected = selectedHex.equals(option.primaryHex, ignoreCase = true)
-            val color = CardColorPalette.getColor(option.primaryHex)
+            val color = CardColorPalette.getHarmonizedColor(option.primaryHex)
 
             Box(
                 modifier = Modifier

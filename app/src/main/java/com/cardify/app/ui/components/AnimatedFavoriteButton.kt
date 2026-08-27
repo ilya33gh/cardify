@@ -91,12 +91,13 @@ fun AnimatedFavoriteIconButton(
             }
             onToggle()
         },
-        shape = SquircleShape,
+        shape = androidx.compose.foundation.shape.CircleShape,
         color = containerColor,
         contentColor = contentColor,
-        tonalElevation = if (isFavorite) 4.dp else 0.dp,
+        border = null,
+        tonalElevation = 0.dp,
         modifier = modifier
-            .size(44.dp)
+            .size(40.dp)
             .scale(buttonScale.value)
     ) {
         Box(

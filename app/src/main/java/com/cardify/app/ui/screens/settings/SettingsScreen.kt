@@ -10,6 +10,7 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -39,6 +40,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
+import com.cardify.app.ui.components.M3ExpressiveCollapsingHeader
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -61,9 +63,9 @@ import com.cardify.app.ui.theme.*
 import kotlinx.coroutines.launch
 
 /**
- * Helper to compute M3 Expressive Connected Grouped Item Shapes (0.dp inner seams)
+ * Helper to compute M3 Expressive Connected Grouped Item Shapes (6.dp inner seams)
  */
-private fun getM3GroupedItemShape(index: Int, totalCount: Int, cornerRadius: Dp = 24.dp, seamRadius: Dp = 0.dp): Shape {
+private fun getM3GroupedItemShape(index: Int, totalCount: Int, cornerRadius: Dp = 24.dp, seamRadius: Dp = 6.dp): Shape {
     if (totalCount <= 1) return RoundedCornerShape(cornerRadius)
     return when (index) {
         0 -> RoundedCornerShape(topStart = cornerRadius, topEnd = cornerRadius, bottomStart = seamRadius, bottomEnd = seamRadius)
@@ -120,72 +122,65 @@ fun SettingsScreen(
 
     val windowSizeInfo = MaterialThemeAdaptive
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.surface,
-        contentWindowInsets = WindowInsets.statusBars,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.settings_title),
-                        style = MaterialTheme.typography.displaySmall.copy(
-                            fontFamily = ManropeFamily,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 28.sp
-                        ),
-                        maxLines = 1,
-                        softWrap = false
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
-            )
-        }
-    ) { paddingValues ->
-        val lazyListState = rememberLazyListState()
+    val lazyListState = rememberLazyListState()
 
-        LaunchedEffect(lazyListState.isScrollInProgress) {
-            if (lazyListState.isScrollInProgress && revealedCategoryId != null) {
-                revealedCategoryId = null
+    LaunchedEffect(lazyListState.isScrollInProgress) {
+        if (lazyListState.isScrollInProgress && revealedCategoryId != null) {
+            revealedCategoryId = null
+        }
+    }
+
+    val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val density = LocalDensity.current
+    val maxCollapsePx = with(density) { 88.dp.toPx() }
+    val collapseFraction by remember {
+        derivedStateOf {
+            if (lazyListState.firstVisibleItemIndex == 0) {
+                (lazyListState.firstVisibleItemScrollOffset / maxCollapsePx).coerceIn(0f, 1f)
+            } else {
+                1f
             }
         }
+    }
 
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.TopCenter
-        ) {
-            LazyColumn(
-                state = lazyListState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .widthIn(max = 760.dp)
-                    .padding(paddingValues)
-                    .padding(horizontal = windowSizeInfo.horizontalPadding)
-                    .pointerInput(revealedCategoryId) {
-                        if (revealedCategoryId != null) {
-                            detectTapGestures {
-                                revealedCategoryId = null
-                            }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        LazyColumn(
+            state = lazyListState,
+            modifier = Modifier
+                .fillMaxSize()
+                .widthIn(max = 760.dp)
+                .padding(horizontal = windowSizeInfo.horizontalPadding)
+                .pointerInput(revealedCategoryId) {
+                    if (revealedCategoryId != null) {
+                        detectTapGestures {
+                            revealedCategoryId = null
                         }
-                    },
-                verticalArrangement = Arrangement.spacedBy(20.dp),
-                contentPadding = PaddingValues(vertical = 12.dp)
-            ) {
+                    }
+                },
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+            contentPadding = PaddingValues(top = statusBarHeight + 56.dp, bottom = 48.dp)
+        ) {
+            // Header Expanded Space Item
+            item(key = "header_spacer", contentType = "header_spacer") {
+                Spacer(modifier = Modifier.height(88.dp))
+            }
+
             // 1. Theme Mode Selector Section
             item(key = "theme_section", contentType = "switcher_section") {
                 Column {
                     Text(
                         text = stringResource(R.string.theme_section_title),
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontFamily = ManropeFamily,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 18.sp
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
                         ),
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 14.dp, bottom = 4.dp)
                     )
                     Spacer(modifier = Modifier.height(10.dp))
 
@@ -353,12 +348,12 @@ fun SettingsScreen(
                 Column {
                     Text(
                         text = stringResource(R.string.language_section_title),
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontFamily = ManropeFamily,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 18.sp
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
                         ),
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 14.dp, bottom = 4.dp)
                     )
                     Spacer(modifier = Modifier.height(10.dp))
 
@@ -384,12 +379,12 @@ fun SettingsScreen(
                 Column {
                     Text(
                         text = stringResource(R.string.security_section_title),
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontFamily = ManropeFamily,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 18.sp
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
                         ),
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 14.dp, bottom = 4.dp)
                     )
                     Spacer(modifier = Modifier.height(10.dp))
 
@@ -400,7 +395,7 @@ fun SettingsScreen(
                                 hapticHelper.performClick()
                                 viewModel.setBiometricEnabled(context, !uiState.isBiometricEnabled)
                             },
-                            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 0.dp, bottomEnd = 0.dp),
+                            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 6.dp, bottomEnd = 6.dp),
                             color = MaterialTheme.colorScheme.surfaceContainerHighest,
                             border = null,
                             modifier = Modifier.fillMaxWidth()
@@ -459,7 +454,7 @@ fun SettingsScreen(
                             Column {
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Surface(
-                                    shape = RoundedCornerShape(0.dp),
+                                    shape = RoundedCornerShape(6.dp),
                                     color = MaterialTheme.colorScheme.surfaceContainerHighest,
                                     border = null,
                                     modifier = Modifier.fillMaxWidth()
@@ -503,7 +498,7 @@ fun SettingsScreen(
                                 hapticHelper.performClick()
                                 viewModel.setFlagSecureEnabled(context, !uiState.isFlagSecureEnabled)
                             },
-                            shape = RoundedCornerShape(0.dp),
+                            shape = RoundedCornerShape(6.dp),
                             color = MaterialTheme.colorScheme.surfaceContainerHighest,
                             border = null,
                             modifier = Modifier.fillMaxWidth()
@@ -561,7 +556,7 @@ fun SettingsScreen(
                                 hapticHelper.performClick()
                                 viewModel.setPrivacyModeEnabled(context, !uiState.isPrivacyModeEnabled)
                             },
-                            shape = RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp, bottomStart = 24.dp, bottomEnd = 24.dp),
+                            shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp, bottomStart = 24.dp, bottomEnd = 24.dp),
                             color = MaterialTheme.colorScheme.surfaceContainerHighest,
                             border = null,
                             modifier = Modifier.fillMaxWidth()
@@ -619,12 +614,12 @@ fun SettingsScreen(
                 Column {
                     Text(
                         text = stringResource(R.string.backup_section_title),
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontFamily = ManropeFamily,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 18.sp
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
                         ),
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 14.dp, bottom = 4.dp)
                     )
                     Spacer(modifier = Modifier.height(10.dp))
 
@@ -635,7 +630,7 @@ fun SettingsScreen(
                                 val timestamp = System.currentTimeMillis()
                                 exportLauncher.launch("cardify_backup_$timestamp.json")
                             },
-                            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 0.dp, bottomEnd = 0.dp),
+                            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 6.dp, bottomEnd = 6.dp),
                             color = MaterialTheme.colorScheme.surfaceContainerHighest,
                             border = null,
                             modifier = Modifier.fillMaxWidth()
@@ -682,7 +677,7 @@ fun SettingsScreen(
                             onClick = {
                                 importLauncher.launch(arrayOf("application/json", "*/*"))
                             },
-                            shape = RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp, bottomStart = 24.dp, bottomEnd = 24.dp),
+                            shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp, bottomStart = 24.dp, bottomEnd = 24.dp),
                             color = MaterialTheme.colorScheme.surfaceContainerHighest,
                             border = null,
                             modifier = Modifier.fillMaxWidth()
@@ -736,12 +731,12 @@ fun SettingsScreen(
                     ) {
                         Text(
                             text = stringResource(R.string.categories_section_title),
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontFamily = ManropeFamily,
-                                fontWeight = FontWeight.Black,
-                                fontSize = 18.sp
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
                             ),
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(start = 14.dp)
                         )
 
                         FilledTonalButton(
@@ -788,7 +783,8 @@ fun SettingsScreen(
                             key(category.id) {
                                 M3SwipeableCategoryRow(
                                     category = category,
-                                    shape = itemShape,
+                                    index = index,
+                                    totalCount = categoriesCount,
                                     isRevealed = (revealedCategoryId == category.id),
                                     isDragging = isDragging,
                                     dragOffsetY = if (isDragging) dragOffsetY else 0f,
@@ -952,8 +948,15 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
+
+        // Pinned Collapsing Header on top
+        M3ExpressiveCollapsingHeader(
+            title = stringResource(R.string.settings_title),
+            onNavigateBack = onNavigateBack,
+            collapseFraction = collapseFraction,
+            modifier = Modifier.align(Alignment.TopCenter)
+        )
     }
-}
 
     if (showAddCategoryDialog) {
         var categoryName by remember { mutableStateOf("") }
@@ -1182,7 +1185,8 @@ fun SettingsScreen(
 @Composable
 private fun M3SwipeableCategoryRow(
     category: CardCategory,
-    shape: Shape,
+    index: Int,
+    totalCount: Int,
     isRevealed: Boolean,
     isDragging: Boolean = false,
     dragOffsetY: Float = 0f,
@@ -1194,6 +1198,21 @@ private fun M3SwipeableCategoryRow(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val dynamicCornerRadius by animateDpAsState(
+        targetValue = if (isDragging || isRevealed) 24.dp else 6.dp,
+        animationSpec = spring<Dp>(dampingRatio = 0.7f, stiffness = Spring.StiffnessMediumLow),
+        label = "categoryRowCornerAnim"
+    )
+
+    val itemShape = remember(index, totalCount, dynamicCornerRadius) {
+        if (totalCount <= 1) {
+            RoundedCornerShape(24.dp)
+        } else when (index) {
+            0 -> RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = dynamicCornerRadius, bottomEnd = dynamicCornerRadius)
+            totalCount - 1 -> RoundedCornerShape(topStart = dynamicCornerRadius, topEnd = dynamicCornerRadius, bottomStart = 24.dp, bottomEnd = 24.dp)
+            else -> RoundedCornerShape(dynamicCornerRadius)
+        }
+    }
     val density = LocalDensity.current
     val maxRevealPx = remember(density) { with(density) { 106.dp.toPx() } }
     val revealOffset = remember { Animatable(0f) }
@@ -1283,7 +1302,7 @@ private fun M3SwipeableCategoryRow(
     ) {
         // Main Category Surface
         Surface(
-            shape = shape,
+            shape = itemShape,
             color = MaterialTheme.colorScheme.surfaceContainerHighest,
             border = null,
             shadowElevation = if (isDragging) 8.dp else 0.dp,
@@ -1304,9 +1323,11 @@ private fun M3SwipeableCategoryRow(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .clipToBounds()
                 ) {
-                    val catColor = CardColorPalette.getColor(category.colorHex)
+                    val catColor = CardColorPalette.getHarmonizedColor(category.colorHex)
                     Box(
                         modifier = Modifier
                             .size(40.dp)
@@ -1333,12 +1354,15 @@ private fun M3SwipeableCategoryRow(
                         ),
                         maxLines = 1,
                         softWrap = false,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Clip
                     )
                 }
 
+                // Solid background zone next to drag handle (=) that covers the text cleanly on swipe
                 Box(
                     modifier = Modifier
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                        .padding(start = 12.dp)
                         .size(40.dp)
                         .pointerInput(category.id) {
                             detectDragGesturesAfterLongPress(

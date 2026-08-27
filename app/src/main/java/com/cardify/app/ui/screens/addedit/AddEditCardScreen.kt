@@ -38,6 +38,9 @@ import com.cardify.app.ui.components.rememberHapticHelper
 import com.cardify.app.ui.theme.ExpressiveButtonShape
 import com.cardify.app.ui.theme.MaterialThemeAdaptive
 import com.cardify.app.ui.theme.ManropeFamily
+import com.cardify.app.ui.theme.OnestFamily
+import androidx.compose.ui.platform.LocalDensity
+import com.cardify.app.ui.components.M3ExpressiveCollapsingHeader
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,9 +52,7 @@ fun AddEditCardScreen(
     val uiState by viewModel.uiState.collectAsState()
     val windowSizeInfo = MaterialThemeAdaptive
 
-    val dynamicCardColor = remember(uiState.selectedColorHex) {
-        CardColorPalette.getColor(uiState.selectedColorHex)
-    }
+    val dynamicCardColor = CardColorPalette.getHarmonizedColor(uiState.selectedColorHex)
 
     LaunchedEffect(uiState.isSaved) {
         if (uiState.isSaved) {
@@ -65,63 +66,21 @@ fun AddEditCardScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = if (uiState.cardId > 0)
-                            stringResource(R.string.edit_card_title)
-                        else
-                            stringResource(R.string.new_card_title),
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontFamily = ManropeFamily,
-                            fontWeight = FontWeight.Bold
-                        ),
-                        maxLines = 1,
-                        softWrap = false
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
-                    }
-                },
-                actions = {
-                    AnimatedFavoriteIconButton(
-                        isFavorite = uiState.isFavorite,
-                        onToggle = { viewModel.onFavoriteToggle() },
-                        modifier = Modifier.padding(end = 8.dp)
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
-            )
-        },
-        floatingActionButton = {
-            val hapticHelper = rememberHapticHelper()
-            LargeFloatingActionButton(
-                onClick = {
-                    hapticHelper.performHeavyClick()
-                    viewModel.saveCard()
-                },
-                shape = RoundedCornerShape(22.dp),
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.size(68.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = if (uiState.cardId > 0)
-                        stringResource(R.string.save_action)
-                    else
-                        stringResource(R.string.add_to_wallet_action),
-                    modifier = Modifier.size(32.dp)
-                )
-            }
+    val scrollState = rememberScrollState()
+    val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val density = LocalDensity.current
+    val maxCollapsePx = with(density) { 88.dp.toPx() }
+    val collapseFraction by remember {
+        derivedStateOf {
+            (scrollState.value.toFloat() / maxCollapsePx).coerceIn(0f, 1f)
         }
-    ) { paddingValues ->
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         val adaptiveHorizontalPadding = windowSizeInfo.horizontalPadding
 
         if (windowSizeInfo.isWideScreen) {
@@ -129,8 +88,8 @@ fun AddEditCardScreen(
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(horizontal = adaptiveHorizontalPadding, vertical = 12.dp),
+                    .padding(top = statusBarHeight + 56.dp, bottom = 12.dp)
+                    .padding(horizontal = adaptiveHorizontalPadding),
                 horizontalArrangement = Arrangement.spacedBy(24.dp)
             ) {
                 // Left Sticky Pane: Card Preview
@@ -140,13 +99,16 @@ fun AddEditCardScreen(
                         .fillMaxHeight(),
                     contentAlignment = Alignment.TopCenter
                 ) {
-                    CardPreviewCard(
-                        title = uiState.title,
-                        barcodeValue = uiState.barcodeValue,
-                        barcodeFormat = uiState.barcodeFormat,
-                        dynamicCardColor = dynamicCardColor,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    Column {
+                        Spacer(modifier = Modifier.height(88.dp * (1f - collapseFraction)))
+                        CardPreviewCard(
+                            title = uiState.title,
+                            barcodeValue = uiState.barcodeValue,
+                            barcodeFormat = uiState.barcodeFormat,
+                            dynamicCardColor = dynamicCardColor,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
 
                 // Right Scrollable Pane: Form Fields
@@ -154,9 +116,10 @@ fun AddEditCardScreen(
                     modifier = Modifier
                         .weight(0.58f)
                         .fillMaxHeight()
-                        .verticalScroll(rememberScrollState()),
+                        .verticalScroll(scrollState),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    Spacer(modifier = Modifier.height(88.dp))
                     CardFormInputs(
                         uiState = uiState,
                         viewModel = viewModel
@@ -174,11 +137,13 @@ fun AddEditCardScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .widthIn(max = 640.dp)
-                        .padding(paddingValues)
                         .padding(horizontal = adaptiveHorizontalPadding)
-                        .verticalScroll(rememberScrollState()),
+                        .verticalScroll(scrollState),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    // Header Expanded Space
+                    Spacer(modifier = Modifier.height(statusBarHeight + 56.dp + 88.dp))
+
                     // Preview Card
                     CardPreviewCard(
                         title = uiState.title,
@@ -197,6 +162,50 @@ fun AddEditCardScreen(
                     Spacer(modifier = Modifier.height(100.dp))
                 }
             }
+        }
+
+        // Pinned Collapsing Header on top
+        M3ExpressiveCollapsingHeader(
+            title = if (uiState.cardId > 0)
+                stringResource(R.string.edit_card_title)
+            else
+                stringResource(R.string.new_card_title),
+            onNavigateBack = onNavigateBack,
+            collapseFraction = collapseFraction,
+            modifier = Modifier.align(Alignment.TopCenter),
+            actions = {
+                AnimatedFavoriteIconButton(
+                    isFavorite = uiState.isFavorite,
+                    onToggle = { viewModel.onFavoriteToggle() },
+                    modifier = Modifier.padding(end = 4.dp)
+                )
+            }
+        )
+
+        // Floating Action Button
+        val hapticHelper = rememberHapticHelper()
+        LargeFloatingActionButton(
+            onClick = {
+                hapticHelper.performHeavyClick()
+                viewModel.saveCard()
+            },
+            shape = RoundedCornerShape(22.dp),
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .navigationBarsPadding()
+                .padding(end = windowSizeInfo.horizontalPadding, bottom = 24.dp)
+                .size(68.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = if (uiState.cardId > 0)
+                    stringResource(R.string.save_action)
+                else
+                    stringResource(R.string.add_to_wallet_action),
+                modifier = Modifier.size(32.dp)
+            )
         }
     }
 }
@@ -307,7 +316,11 @@ private fun CardFormInputs(
                         Text(
                             text = format.displayName,
                             color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = if (uiState.barcodeFormat == format) FontWeight.Bold else FontWeight.Normal
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontFamily = OnestFamily,
+                                fontWeight = if (uiState.barcodeFormat == format) FontWeight.Bold else FontWeight.Medium,
+                                fontSize = 17.sp
+                            )
                         )
                     },
                     onClick = {
