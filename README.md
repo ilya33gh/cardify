@@ -93,13 +93,6 @@ Built with modern Android development standards, **cardify** is **100% offline**
 
 ---
 
-## 📋 Pre-publication Checklist for GitHub
-
-1. ✅ **Verified `.gitignore`**: Ensure `build/`, `.idea/`, and `local.properties` are excluded.
-2. ✅ **No Hardcoded Secrets**: Project runs 100% locally and contains zero API keys or signing secrets.
-3. 📄 **License**: Includes the [MIT License](LICENSE) for open-source distribution.
-
----
 
 ## 📄 License
 
