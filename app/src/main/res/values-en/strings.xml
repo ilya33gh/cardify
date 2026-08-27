@@ -80,6 +80,7 @@
     <string name="cat_gifts">Gifts</string>
     <string name="cat_fitness">Fitness</string>
     <string name="cat_cafe">Cafe</string>
+    <string name="cat_other">Other</string>
 
     <!-- Scanner -->
     <string name="camera_permission_title">Camera access required</string>

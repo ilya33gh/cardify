@@ -36,7 +36,8 @@ import com.cardify.app.ui.components.getCategoryIcon
 import com.cardify.app.ui.components.getLocalizedCategoryRes
 import com.cardify.app.ui.components.rememberHapticHelper
 import com.cardify.app.ui.theme.ExpressiveButtonShape
-import com.cardify.app.ui.theme.SpaceGroteskFamily
+import com.cardify.app.ui.theme.MaterialThemeAdaptive
+import com.cardify.app.ui.theme.ManropeFamily
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,7 +47,7 @@ fun AddEditCardScreen(
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
-    var isFormatDropdownOpen by remember { mutableStateOf(false) }
+    val windowSizeInfo = MaterialThemeAdaptive
 
     val dynamicCardColor = remember(uiState.selectedColorHex) {
         CardColorPalette.getColor(uiState.selectedColorHex)
@@ -74,7 +75,7 @@ fun AddEditCardScreen(
                         else
                             stringResource(R.string.new_card_title),
                         style = MaterialTheme.typography.titleLarge.copy(
-                            fontFamily = SpaceGroteskFamily,
+                            fontFamily = ManropeFamily,
                             fontWeight = FontWeight.Bold
                         ),
                         maxLines = 1,
@@ -121,181 +122,264 @@ fun AddEditCardScreen(
             }
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 20.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Permanent Dynamic Barcode Preview Box
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(28.dp),
-                color = dynamicCardColor,
-                contentColor = Color.White,
-                tonalElevation = 4.dp
+        val adaptiveHorizontalPadding = windowSizeInfo.horizontalPadding
+
+        if (windowSizeInfo.isWideScreen) {
+            // Two-Pane Split Layout for Foldables, Tablets, and Landscape
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = adaptiveHorizontalPadding, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(14.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                // Left Sticky Pane: Card Preview
+                Box(
+                    modifier = Modifier
+                        .weight(0.42f)
+                        .fillMaxHeight(),
+                    contentAlignment = Alignment.TopCenter
                 ) {
-                    Text(
-                        text = uiState.title.ifBlank { stringResource(R.string.card_preview_title) },
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontFamily = SpaceGroteskFamily,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 18.sp
-                        ),
-                        color = Color.White,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    
-                    val displayBarcodeValue = uiState.barcodeValue.ifBlank { "123456789012" }
-                    BarcodeDisplay(
-                        value = displayBarcodeValue,
-                        format = uiState.barcodeFormat,
-                        shape = RoundedCornerShape(16.dp),
+                    CardPreviewCard(
+                        title = uiState.title,
+                        barcodeValue = uiState.barcodeValue,
+                        barcodeFormat = uiState.barcodeFormat,
+                        dynamicCardColor = dynamicCardColor,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
-            }
 
-            // Card Title Field
-            OutlinedTextField(
-                value = uiState.title,
-                onValueChange = { viewModel.onTitleChanged(it) },
-                label = { Text(stringResource(R.string.card_title_label)) },
-                placeholder = { Text(stringResource(R.string.card_title_placeholder)) },
-                singleLine = true,
-                shape = ExpressiveButtonShape,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            // Barcode Number / Value Field
-            OutlinedTextField(
-                value = uiState.barcodeValue,
-                onValueChange = { viewModel.onBarcodeValueChanged(it) },
-                label = { Text(stringResource(R.string.card_code_label)) },
-                placeholder = { Text(stringResource(R.string.card_code_placeholder)) },
-                singleLine = true,
-                shape = ExpressiveButtonShape,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            // Barcode Format Dropdown
-            ExposedDropdownMenuBox(
-                expanded = isFormatDropdownOpen,
-                onExpandedChange = { isFormatDropdownOpen = it }
-            ) {
-                OutlinedTextField(
-                    value = uiState.barcodeFormat.displayName,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text(stringResource(R.string.code_type_label)) },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isFormatDropdownOpen) },
-                    shape = ExpressiveButtonShape,
+                // Right Scrollable Pane: Form Fields
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
-                )
-
-                ExposedDropdownMenu(
-                    expanded = isFormatDropdownOpen,
-                    onDismissRequest = { isFormatDropdownOpen = false },
-                    shape = RoundedCornerShape(12.dp),
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    tonalElevation = 4.dp,
-                    shadowElevation = 8.dp,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                        .weight(0.58f)
+                        .fillMaxHeight()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    BarcodeFormatEnum.entries.forEach { format ->
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    text = format.displayName,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    fontWeight = if (uiState.barcodeFormat == format) FontWeight.Bold else FontWeight.Normal
-                                )
-                            },
-                            onClick = {
-                                viewModel.onBarcodeFormatChanged(format)
-                                isFormatDropdownOpen = false
-                            },
-                            contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                        )
-                    }
-                }
-            }
-
-            // Category Selection using GooglePillChip
-            Text(
-                text = stringResource(R.string.category_label),
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontFamily = SpaceGroteskFamily,
-                    fontWeight = FontWeight.Bold
-                ),
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
-                softWrap = false
-            )
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                uiState.categories.forEach { category ->
-                    val isSelected = uiState.selectedCategoryId == category.id
-                    val localizedRes = getLocalizedCategoryRes(category.name)
-                    val displayName = if (localizedRes != null) stringResource(localizedRes) else category.name
-
-                    GooglePillChip(
-                        isSelected = isSelected,
-                        onClick = { viewModel.onCategorySelected(if (isSelected) null else category.id) },
-                        label = displayName,
-                        icon = getCategoryIcon(category.iconName)
+                    CardFormInputs(
+                        uiState = uiState,
+                        viewModel = viewModel
                     )
+                    Spacer(modifier = Modifier.height(100.dp))
                 }
             }
+        } else {
+            // Single-Column Layout for standard Phones
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.TopCenter
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .widthIn(max = 640.dp)
+                        .padding(paddingValues)
+                        .padding(horizontal = adaptiveHorizontalPadding)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Preview Card
+                    CardPreviewCard(
+                        title = uiState.title,
+                        barcodeValue = uiState.barcodeValue,
+                        barcodeFormat = uiState.barcodeFormat,
+                        dynamicCardColor = dynamicCardColor,
+                        modifier = Modifier.fillMaxWidth()
+                    )
 
-            // Card Color Palette Picker
-            Text(
-                text = stringResource(R.string.card_color_label),
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontFamily = SpaceGroteskFamily,
-                    fontWeight = FontWeight.Bold
-                ),
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
-                softWrap = false
-            )
+                    // Form inputs
+                    CardFormInputs(
+                        uiState = uiState,
+                        viewModel = viewModel
+                    )
 
-            ColorPickerRow(
-                selectedHex = uiState.selectedColorHex,
-                onSelectHex = { viewModel.onColorSelected(it) }
-            )
-
-            // Optional Notes Field
-            OutlinedTextField(
-                value = uiState.notes,
-                onValueChange = { viewModel.onNotesChanged(it) },
-                label = { Text(stringResource(R.string.note_optional_label)) },
-                placeholder = { Text(stringResource(R.string.note_placeholder)) },
-                leadingIcon = { Icon(Icons.AutoMirrored.Outlined.Notes, contentDescription = null) },
-                minLines = 2,
-                maxLines = 4,
-                shape = ExpressiveButtonShape,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(100.dp))
+                    Spacer(modifier = Modifier.height(100.dp))
+                }
+            }
         }
     }
+}
+
+@Composable
+private fun CardPreviewCard(
+    title: String,
+    barcodeValue: String,
+    barcodeFormat: BarcodeFormatEnum,
+    dynamicCardColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(28.dp),
+        color = dynamicCardColor,
+        contentColor = Color.White,
+        tonalElevation = 4.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = title.ifBlank { stringResource(R.string.card_preview_title) },
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontFamily = ManropeFamily,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 18.sp
+                ),
+                color = Color.White,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+
+            val displayBarcodeValue = barcodeValue.ifBlank { "123456789012" }
+            BarcodeDisplay(
+                value = displayBarcodeValue,
+                format = barcodeFormat,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CardFormInputs(
+    uiState: AddEditCardUiState,
+    viewModel: AddEditCardViewModel
+) {
+    var isFormatDropdownOpen by remember { mutableStateOf(false) }
+
+    // Card Title Field
+    OutlinedTextField(
+        value = uiState.title,
+        onValueChange = { viewModel.onTitleChanged(it) },
+        label = { Text(stringResource(R.string.card_title_label)) },
+        placeholder = { Text(stringResource(R.string.card_title_placeholder)) },
+        singleLine = true,
+        shape = ExpressiveButtonShape,
+        modifier = Modifier.fillMaxWidth()
+    )
+
+    // Barcode Number / Value Field
+    OutlinedTextField(
+        value = uiState.barcodeValue,
+        onValueChange = { viewModel.onBarcodeValueChanged(it) },
+        label = { Text(stringResource(R.string.card_code_label)) },
+        placeholder = { Text(stringResource(R.string.card_code_placeholder)) },
+        singleLine = true,
+        shape = ExpressiveButtonShape,
+        modifier = Modifier.fillMaxWidth()
+    )
+
+    // Barcode Format Dropdown
+    ExposedDropdownMenuBox(
+        expanded = isFormatDropdownOpen,
+        onExpandedChange = { isFormatDropdownOpen = it }
+    ) {
+        OutlinedTextField(
+            value = uiState.barcodeFormat.displayName,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(stringResource(R.string.code_type_label)) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isFormatDropdownOpen) },
+            shape = ExpressiveButtonShape,
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
+        )
+
+        ExposedDropdownMenu(
+            expanded = isFormatDropdownOpen,
+            onDismissRequest = { isFormatDropdownOpen = false },
+            shape = RoundedCornerShape(12.dp),
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            tonalElevation = 4.dp,
+            shadowElevation = 8.dp,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+        ) {
+            BarcodeFormatEnum.entries.forEach { format ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = format.displayName,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = if (uiState.barcodeFormat == format) FontWeight.Bold else FontWeight.Normal
+                        )
+                    },
+                    onClick = {
+                        viewModel.onBarcodeFormatChanged(format)
+                        isFormatDropdownOpen = false
+                    },
+                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                )
+            }
+        }
+    }
+
+    // Category Selection using GooglePillChip
+    Text(
+        text = stringResource(R.string.category_label),
+        style = MaterialTheme.typography.titleMedium.copy(
+            fontFamily = ManropeFamily,
+            fontWeight = FontWeight.Bold
+        ),
+        color = MaterialTheme.colorScheme.primary,
+        maxLines = 1,
+        softWrap = false
+    )
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        uiState.categories.forEach { category ->
+            val isSelected = uiState.selectedCategoryId == category.id
+            val localizedRes = getLocalizedCategoryRes(category.name)
+            val displayName = if (localizedRes != null) stringResource(localizedRes) else category.name
+
+            GooglePillChip(
+                isSelected = isSelected,
+                onClick = { viewModel.onCategorySelected(if (isSelected) null else category.id) },
+                label = displayName,
+                icon = getCategoryIcon(category.iconName)
+            )
+        }
+    }
+
+    // Card Color Palette Picker
+    Text(
+        text = stringResource(R.string.card_color_label),
+        style = MaterialTheme.typography.titleMedium.copy(
+            fontFamily = ManropeFamily,
+            fontWeight = FontWeight.Bold
+        ),
+        color = MaterialTheme.colorScheme.primary,
+        maxLines = 1,
+        softWrap = false
+    )
+
+    ColorPickerRow(
+        selectedHex = uiState.selectedColorHex,
+        onSelectHex = { viewModel.onColorSelected(it) }
+    )
+
+    // Optional Notes Field
+    OutlinedTextField(
+        value = uiState.notes,
+        onValueChange = { viewModel.onNotesChanged(it) },
+        label = { Text(stringResource(R.string.note_optional_label)) },
+        placeholder = { Text(stringResource(R.string.note_placeholder)) },
+        leadingIcon = { Icon(Icons.AutoMirrored.Outlined.Notes, contentDescription = null) },
+        minLines = 2,
+        maxLines = 4,
+        shape = ExpressiveButtonShape,
+        modifier = Modifier.fillMaxWidth()
+    )
 }

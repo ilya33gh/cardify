@@ -1,5 +1,7 @@
 package com.cardify.app.ui.screens.settings
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -22,6 +24,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -115,6 +118,8 @@ fun SettingsScreen(
         }
     }
 
+    val windowSizeInfo = MaterialThemeAdaptive
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets.statusBars,
@@ -124,7 +129,7 @@ fun SettingsScreen(
                     Text(
                         text = stringResource(R.string.settings_title),
                         style = MaterialTheme.typography.displaySmall.copy(
-                            fontFamily = SpaceGroteskFamily,
+                            fontFamily = ManropeFamily,
                             fontWeight = FontWeight.Black,
                             fontSize = 28.sp
                         ),
@@ -149,29 +154,34 @@ fun SettingsScreen(
             }
         }
 
-        LazyColumn(
-            state = lazyListState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 18.dp)
-                .pointerInput(revealedCategoryId) {
-                    if (revealedCategoryId != null) {
-                        detectTapGestures {
-                            revealedCategoryId = null
-                        }
-                    }
-                },
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-            contentPadding = PaddingValues(vertical = 12.dp)
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.TopCenter
         ) {
+            LazyColumn(
+                state = lazyListState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .widthIn(max = 760.dp)
+                    .padding(paddingValues)
+                    .padding(horizontal = windowSizeInfo.horizontalPadding)
+                    .pointerInput(revealedCategoryId) {
+                        if (revealedCategoryId != null) {
+                            detectTapGestures {
+                                revealedCategoryId = null
+                            }
+                        }
+                    },
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+                contentPadding = PaddingValues(vertical = 12.dp)
+            ) {
             // 1. Theme Mode Selector Section
             item(key = "theme_section", contentType = "switcher_section") {
                 Column {
                     Text(
                         text = stringResource(R.string.theme_section_title),
                         style = MaterialTheme.typography.titleMedium.copy(
-                            fontFamily = SpaceGroteskFamily,
+                            fontFamily = ManropeFamily,
                             fontWeight = FontWeight.Black,
                             fontSize = 18.sp
                         ),
@@ -344,7 +354,7 @@ fun SettingsScreen(
                     Text(
                         text = stringResource(R.string.language_section_title),
                         style = MaterialTheme.typography.titleMedium.copy(
-                            fontFamily = SpaceGroteskFamily,
+                            fontFamily = ManropeFamily,
                             fontWeight = FontWeight.Black,
                             fontSize = 18.sp
                         ),
@@ -375,7 +385,7 @@ fun SettingsScreen(
                     Text(
                         text = stringResource(R.string.security_section_title),
                         style = MaterialTheme.typography.titleMedium.copy(
-                            fontFamily = SpaceGroteskFamily,
+                            fontFamily = ManropeFamily,
                             fontWeight = FontWeight.Black,
                             fontSize = 18.sp
                         ),
@@ -610,7 +620,7 @@ fun SettingsScreen(
                     Text(
                         text = stringResource(R.string.backup_section_title),
                         style = MaterialTheme.typography.titleMedium.copy(
-                            fontFamily = SpaceGroteskFamily,
+                            fontFamily = ManropeFamily,
                             fontWeight = FontWeight.Black,
                             fontSize = 18.sp
                         ),
@@ -727,7 +737,7 @@ fun SettingsScreen(
                         Text(
                             text = stringResource(R.string.categories_section_title),
                             style = MaterialTheme.typography.titleMedium.copy(
-                                fontFamily = SpaceGroteskFamily,
+                                fontFamily = ManropeFamily,
                                 fontWeight = FontWeight.Black,
                                 fontSize = 18.sp
                             ),
@@ -851,23 +861,99 @@ fun SettingsScreen(
                         Text(
                             text = "Cardify",
                             style = MaterialTheme.typography.titleLarge.copy(
-                                fontFamily = SpaceGroteskFamily,
-                                fontWeight = FontWeight.Black
+                                fontFamily = ManropeFamily,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 24.sp
                             ),
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
+
                         Spacer(modifier = Modifier.height(4.dp))
+
+                        Surface(
+                            shape = PillShape,
+                            color = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ) {
+                            Text(
+                                text = "v1.0.0-beta.2",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontFamily = OnestFamily,
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 11.sp
+                                ),
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
                         Text(
                             text = "Ultra-Expressive M3 • Offline-First",
                             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                         )
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // GitHub Repository Link Button
+                        Surface(
+                            onClick = {
+                                hapticHelper.performClick()
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/ilya33gh/cardify"))
+                                try {
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            },
+                            shape = PillShape,
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                            contentColor = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.fillMaxWidth(0.92f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Code,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        text = "github.com/ilya33gh/cardify",
+                                        style = MaterialTheme.typography.labelMedium.copy(
+                                            fontFamily = OnestFamily,
+                                            fontWeight = FontWeight.Bold
+                                        ),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
+}
 
     if (showAddCategoryDialog) {
         var categoryName by remember { mutableStateOf("") }
@@ -886,7 +972,7 @@ fun SettingsScreen(
                 Text(
                     text = stringResource(R.string.new_category_title),
                     fontWeight = FontWeight.Black,
-                    fontFamily = InterFamily,
+                    fontFamily = OnestFamily,
                     maxLines = 1,
                     softWrap = false
                 )
@@ -971,7 +1057,7 @@ fun SettingsScreen(
                 Text(
                     text = "Редактировать категорию",
                     fontWeight = FontWeight.Black,
-                    fontFamily = InterFamily,
+                    fontFamily = OnestFamily,
                     maxLines = 1,
                     softWrap = false
                 )
@@ -1048,7 +1134,7 @@ fun SettingsScreen(
                 Text(
                     text = "Удалить категорию?",
                     fontWeight = FontWeight.Black,
-                    fontFamily = InterFamily,
+                    fontFamily = OnestFamily,
                     maxLines = 1,
                     softWrap = false
                 )

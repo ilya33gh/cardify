@@ -18,8 +18,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
 import com.cardify.app.R
+import com.cardify.app.ui.theme.ManropeFamily
 import com.cardify.app.ui.theme.PillShape
-import com.cardify.app.ui.theme.SpaceGroteskFamily
 
 @Composable
 fun BiometricAuthLockScreen(
@@ -78,7 +78,7 @@ fun BiometricAuthLockScreen(
                 Text(
                     text = stringResource(R.string.lock_screen_title),
                     style = MaterialTheme.typography.headlineMedium.copy(
-                        fontFamily = SpaceGroteskFamily,
+                        fontFamily = ManropeFamily,
                         fontWeight = FontWeight.Black,
                         fontSize = 24.sp
                     ),
@@ -110,7 +110,8 @@ fun BiometricAuthLockScreen(
                     },
                     shape = PillShape,
                     modifier = Modifier
-                        .fillMaxWidth(0.8f)
+                        .fillMaxWidth(0.85f)
+                        .widthIn(max = 380.dp)
                         .height(54.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {

@@ -23,6 +23,8 @@ import com.cardify.app.data.local.ThemeHelper
 import com.cardify.app.ui.navigation.CardifyNavHost
 import com.cardify.app.ui.security.BiometricAuthLockScreen
 import com.cardify.app.ui.theme.CardifyTheme
+import com.cardify.app.ui.theme.LocalWindowSizeInfo
+import com.cardify.app.ui.theme.rememberWindowSizeInfo
 
 class MainActivity : FragmentActivity() {
 
@@ -34,49 +36,44 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Shrinking scale + fade out exit animation on splash screen
-        splashScreen.setOnExitAnimationListener { splashScreenViewProvider ->
-            val iconView = splashScreenViewProvider.iconView
-            val splashView = splashScreenViewProvider.view
+        // Only run custom exit animation on initial cold start (never on Activity recreation/wallpaper change)
+        if (savedInstanceState == null) {
+            splashScreen.setOnExitAnimationListener { splashScreenViewProvider ->
+                try {
+                    val iconView = splashScreenViewProvider.iconView
+                    val splashView = splashScreenViewProvider.view
 
-            if (iconView != null) {
-                val scaleX = PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 0.35f, 0f)
-                val scaleY = PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 0.35f, 0f)
-                val iconAlpha = PropertyValuesHolder.ofFloat(View.ALPHA, 1f, 0f)
+                    if (iconView != null && splashView != null) {
+                        val scaleX = PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 0.35f, 0f)
+                        val scaleY = PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 0.35f, 0f)
+                        val iconAlpha = PropertyValuesHolder.ofFloat(View.ALPHA, 1f, 0f)
 
-                val iconAnimator = ObjectAnimator.ofPropertyValuesHolder(iconView, scaleX, scaleY, iconAlpha).apply {
-                    interpolator = AnticipateInterpolator(1.6f)
-                    duration = 380L
-                }
-
-                val bgAlpha = ObjectAnimator.ofFloat(splashView, View.ALPHA, 1f, 0f).apply {
-                    interpolator = AccelerateDecelerateInterpolator()
-                    duration = 380L
-                }
-
-                AnimatorSet().apply {
-                    playTogether(iconAnimator, bgAlpha)
-                    doOnEnd {
-                        try {
-                            splashScreenViewProvider.remove()
-                        } catch (e: Exception) {
-                            e.printStackTrace()
+                        val iconAnimator = ObjectAnimator.ofPropertyValuesHolder(iconView, scaleX, scaleY, iconAlpha).apply {
+                            interpolator = AnticipateInterpolator(1.6f)
+                            duration = 360L
                         }
-                    }
-                    start()
-                }
-            } else {
-                ObjectAnimator.ofFloat(splashView, View.ALPHA, 1f, 0f).apply {
-                    interpolator = AccelerateDecelerateInterpolator()
-                    duration = 380L
-                    doOnEnd {
-                        try {
-                            splashScreenViewProvider.remove()
-                        } catch (e: Exception) {
-                            e.printStackTrace()
+
+                        val bgAlpha = ObjectAnimator.ofFloat(splashView, View.ALPHA, 1f, 0f).apply {
+                            interpolator = AccelerateDecelerateInterpolator()
+                            duration = 360L
                         }
+
+                        AnimatorSet().apply {
+                            playTogether(iconAnimator, bgAlpha)
+                            doOnEnd {
+                                try {
+                                    splashScreenViewProvider.remove()
+                                } catch (_: Throwable) { }
+                            }
+                            start()
+                        }
+                    } else {
+                        splashScreenViewProvider.remove()
                     }
-                    start()
+                } catch (_: Throwable) {
+                    try {
+                        splashScreenViewProvider.remove()
+                    } catch (_: Throwable) { }
                 }
             }
         }
@@ -104,24 +101,30 @@ class MainActivity : FragmentActivity() {
                 onDispose { }
             }
 
-            CardifyTheme(
-                themeMode = themeMode,
-                dynamicColor = isDynamicColor
-            ) {
-                val navController = rememberNavController()
-                Box(modifier = Modifier.fillMaxSize()) {
-                    CardifyNavHost(
-                        navController = navController,
-                        cardRepository = app.cardRepository,
-                        categoryRepository = app.categoryRepository,
-                        backupRepository = app.backupRepository
-                    )
+            val windowSizeInfo = rememberWindowSizeInfo()
 
-                    if (isBiometricEnabled) {
-                        BiometricAuthLockScreen(
-                            isLocked = isAppLocked.value,
-                            onUnlockSuccess = { isAppLocked.value = false }
+            CompositionLocalProvider(
+                LocalWindowSizeInfo provides windowSizeInfo
+            ) {
+                CardifyTheme(
+                    themeMode = themeMode,
+                    dynamicColor = isDynamicColor
+                ) {
+                    val navController = rememberNavController()
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        CardifyNavHost(
+                            navController = navController,
+                            cardRepository = app.cardRepository,
+                            categoryRepository = app.categoryRepository,
+                            backupRepository = app.backupRepository
                         )
+
+                        if (isBiometricEnabled) {
+                            BiometricAuthLockScreen(
+                                isLocked = isAppLocked.value,
+                                onUnlockSuccess = { isAppLocked.value = false }
+                            )
+                        }
                     }
                 }
             }

@@ -69,18 +69,33 @@ abstract class CardDatabase : RoomDatabase() {
                     }
                 }
             }
+
+            override fun onOpen(db: SupportSQLiteDatabase) {
+                super.onOpen(db)
+                // Normalize legacy Russian category names to canonical English names in database
+                try {
+                    db.execSQL("UPDATE categories SET name = 'Supermarkets' WHERE name = 'Супермаркеты'")
+                    db.execSQL("UPDATE categories SET name = 'Clothing & Shoes' WHERE name = 'Одежда и обувь' OR name = 'Одежда'")
+                    db.execSQL("UPDATE categories SET name = 'Pharmacy & Health' WHERE name = 'Аптеки и здоровье' OR name = 'Аптеки'")
+                    db.execSQL("UPDATE categories SET name = 'Gas & Auto' WHERE name = 'АЗС и авто' OR name = 'АЗС'")
+                    db.execSQL("UPDATE categories SET name = 'Restaurants & Cafes' WHERE name = 'Рестораны и кафе' OR name = 'Рестораны'")
+                    db.execSQL("UPDATE categories SET name = 'Electronics' WHERE name = 'Электроника'")
+                    db.execSQL("UPDATE categories SET name = 'Entertainment' WHERE name = 'Развлечения'")
+                    db.execSQL("UPDATE categories SET name = 'Other' WHERE name = 'Другое'")
+                } catch (_: Throwable) { }
+            }
         }
 
         suspend fun populateDefaultCategories(dao: CategoryDao) {
             val defaultCategories = listOf(
-                CategoryEntity(name = "Супермаркеты", iconName = "shopping_cart", colorHex = "#1E88E5", orderIndex = 0),
-                CategoryEntity(name = "Одежда и обувь", iconName = "checkroom", colorHex = "#E91E63", orderIndex = 1),
-                CategoryEntity(name = "Аптеки и здоровье", iconName = "local_pharmacy", colorHex = "#00897B", orderIndex = 2),
-                CategoryEntity(name = "АЗС и авто", iconName = "local_gas_station", colorHex = "#FB8C00", orderIndex = 3),
-                CategoryEntity(name = "Рестораны и кафе", iconName = "restaurant", colorHex = "#8E24AA", orderIndex = 4),
-                CategoryEntity(name = "Электроника", iconName = "devices", colorHex = "#3949AB", orderIndex = 5),
-                CategoryEntity(name = "Развлечения", iconName = "sports_esports", colorHex = "#D81B60", orderIndex = 6),
-                CategoryEntity(name = "Другое", iconName = "folder", colorHex = "#546E7A", orderIndex = 7)
+                CategoryEntity(name = "Supermarkets", iconName = "shopping_cart", colorHex = "#1E88E5", orderIndex = 0),
+                CategoryEntity(name = "Clothing & Shoes", iconName = "checkroom", colorHex = "#E91E63", orderIndex = 1),
+                CategoryEntity(name = "Pharmacy & Health", iconName = "local_pharmacy", colorHex = "#00897B", orderIndex = 2),
+                CategoryEntity(name = "Gas & Auto", iconName = "local_gas_station", colorHex = "#FB8C00", orderIndex = 3),
+                CategoryEntity(name = "Restaurants & Cafes", iconName = "restaurant", colorHex = "#8E24AA", orderIndex = 4),
+                CategoryEntity(name = "Electronics", iconName = "devices", colorHex = "#3949AB", orderIndex = 5),
+                CategoryEntity(name = "Entertainment", iconName = "sports_esports", colorHex = "#D81B60", orderIndex = 6),
+                CategoryEntity(name = "Other", iconName = "folder", colorHex = "#546E7A", orderIndex = 7)
             )
             dao.insertCategories(defaultCategories)
         }
