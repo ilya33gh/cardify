@@ -173,7 +173,7 @@ fun ExpressiveLoyaltyCard(
                             Text(
                                 text = storeInitial,
                                 style = MaterialTheme.typography.titleMedium.copy(
-                                    fontFamily = InterFamily,
+                                    fontFamily = OnestFamily,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 17.sp
                                 )
@@ -182,15 +182,17 @@ fun ExpressiveLoyaltyCard(
                     }
 
                     if (!card.categoryName.isNullOrBlank()) {
+                        val localizedRes = getLocalizedCategoryRes(card.categoryName)
+                        val displayCatName = if (localizedRes != null) stringResource(localizedRes) else card.categoryName
                         Surface(
                             shape = PillShape,
                             color = Color.Black.copy(alpha = 0.18f),
                             contentColor = Color.White
                         ) {
                             Text(
-                                text = card.categoryName,
+                                text = displayCatName,
                                 style = MaterialTheme.typography.labelMedium.copy(
-                                    fontFamily = InterFamily,
+                                    fontFamily = OnestFamily,
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 13.sp
                                 ),
@@ -229,7 +231,7 @@ fun ExpressiveLoyaltyCard(
             Text(
                 text = buildHighlightedText(card.title, searchQuery),
                 style = MaterialTheme.typography.headlineLarge.copy(
-                    fontFamily = SpaceGroteskFamily,
+                    fontFamily = ManropeFamily,
                     fontWeight = FontWeight.Bold,
                     fontSize = 23.sp,
                     lineHeight = 27.sp
@@ -276,7 +278,7 @@ fun ExpressiveLoyaltyCard(
                                 highlightTextColor = Color(0xFF1B1B1F)
                             ),
                             style = MaterialTheme.typography.titleMedium.copy(
-                                fontFamily = InterFamily,
+                                fontFamily = OnestFamily,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 16.sp
                             ),
@@ -295,7 +297,7 @@ fun ExpressiveLoyaltyCard(
                         Text(
                             text = card.barcodeFormat.displayName,
                             style = MaterialTheme.typography.labelSmall.copy(
-                                fontFamily = InterFamily,
+                                fontFamily = OnestFamily,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 11.sp
                             ),
@@ -372,7 +374,7 @@ fun ExpressiveLoyaltyCardRow(
                     Text(
                         text = storeInitial,
                         style = MaterialTheme.typography.titleMedium.copy(
-                            fontFamily = InterFamily,
+                            fontFamily = OnestFamily,
                             fontWeight = FontWeight.Black,
                             color = Color.White
                         )
@@ -384,7 +386,7 @@ fun ExpressiveLoyaltyCardRow(
                 Text(
                     text = buildHighlightedText(card.title, searchQuery),
                     style = MaterialTheme.typography.titleMedium.copy(
-                        fontFamily = SpaceGroteskFamily,
+                        fontFamily = ManropeFamily,
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
                     ),
@@ -394,7 +396,7 @@ fun ExpressiveLoyaltyCardRow(
                 Text(
                     text = buildHighlightedText(card.barcodeValue, searchQuery),
                     style = MaterialTheme.typography.bodySmall.copy(
-                        fontFamily = InterFamily,
+                        fontFamily = OnestFamily,
                         fontWeight = FontWeight.Medium
                     ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -431,7 +433,7 @@ fun ExpressiveLoyaltyCardRow(
                     Text(
                         text = card.barcodeFormat.displayName,
                         style = MaterialTheme.typography.labelSmall.copy(
-                            fontFamily = InterFamily,
+                            fontFamily = OnestFamily,
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 11.sp
                         ),
@@ -512,7 +514,7 @@ fun ExpressiveLoyaltyCardGrid(
                         Text(
                             text = storeInitial,
                             style = MaterialTheme.typography.titleMedium.copy(
-                                fontFamily = InterFamily,
+                                fontFamily = OnestFamily,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 16.sp
                             )
@@ -543,7 +545,7 @@ fun ExpressiveLoyaltyCardGrid(
                 Text(
                     text = buildHighlightedText(card.title, searchQuery),
                     style = MaterialTheme.typography.titleMedium.copy(
-                        fontFamily = SpaceGroteskFamily,
+                        fontFamily = ManropeFamily,
                         fontWeight = FontWeight.Bold,
                         fontSize = 17.sp,
                         lineHeight = 20.sp
@@ -556,7 +558,7 @@ fun ExpressiveLoyaltyCardGrid(
                 Text(
                     text = buildHighlightedText(card.barcodeValue, searchQuery),
                     style = MaterialTheme.typography.bodySmall.copy(
-                        fontFamily = InterFamily,
+                        fontFamily = OnestFamily,
                         fontWeight = FontWeight.Medium
                     ),
                     color = Color.White.copy(alpha = 0.85f),
@@ -978,7 +980,7 @@ fun ExpressiveSplitButton(
                 Text(
                     text = primaryText,
                     style = MaterialTheme.typography.titleLarge.copy(
-                        fontFamily = InterFamily,
+                        fontFamily = OnestFamily,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
                     ),
@@ -1124,7 +1126,7 @@ fun AnimatedEmptyWalletState(
             else
                 stringResource(R.string.empty_wallet_title),
             style = MaterialTheme.typography.headlineLarge.copy(
-                fontFamily = InterFamily,
+                fontFamily = OnestFamily,
                 fontWeight = FontWeight.Black,
                 fontSize = 26.sp
             ),
@@ -1362,16 +1364,17 @@ fun ColorPickerRow(
 
 fun getLocalizedCategoryRes(categoryName: String): Int? {
     return when (categoryName.trim()) {
-        "Супермаркеты", "Supermarkets" -> R.string.cat_supermarkets
-        "Одежда и обувь", "Clothing & Shoes" -> R.string.cat_clothing
-        "Аптеки и здоровье", "Pharmacy & Health", "Аптеки", "Pharmacy" -> R.string.cat_pharmacy
-        "АЗС и авто", "Gas & Auto", "АЗС", "Gas" -> R.string.cat_gas
-        "Рестораны и кафе", "Restaurants & Cafes", "Рестораны", "Restaurants" -> R.string.cat_restaurants
-        "Электроника", "Electronics" -> R.string.cat_electronics
-        "Развлечения", "Entertainment" -> R.string.cat_entertainment
-        "Подарки", "Gifts" -> R.string.cat_gifts
-        "Спорт", "Fitness" -> R.string.cat_fitness
-        "Кафе", "Cafe" -> R.string.cat_cafe
+        "Supermarkets", "Супермаркеты" -> R.string.cat_supermarkets
+        "Clothing & Shoes", "Clothing", "Одежда и обувь", "Одежда" -> R.string.cat_clothing
+        "Pharmacy & Health", "Pharmacy", "Pharmacies", "Аптеки и здоровье", "Аптеки" -> R.string.cat_pharmacy
+        "Gas & Auto", "Gas Stations", "Gas", "АЗС и авто", "АЗС" -> R.string.cat_gas
+        "Restaurants & Cafes", "Restaurants", "Рестораны и кафе", "Рестораны" -> R.string.cat_restaurants
+        "Electronics", "Электроника" -> R.string.cat_electronics
+        "Entertainment", "Развлечения" -> R.string.cat_entertainment
+        "Gifts", "Подарки" -> R.string.cat_gifts
+        "Fitness", "Sport", "Sports", "Спорт" -> R.string.cat_fitness
+        "Cafe", "Кафе" -> R.string.cat_cafe
+        "Other", "Другое" -> R.string.cat_other
         else -> null
     }
 }
@@ -1486,7 +1489,7 @@ fun M3ExpressiveSpeedDialFab(
                             Text(
                                 text = stringResource(R.string.manual_action),
                                 style = MaterialTheme.typography.titleMedium.copy(
-                                    fontFamily = InterFamily,
+                                    fontFamily = OnestFamily,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 15.sp
                                 ),
@@ -1522,7 +1525,7 @@ fun M3ExpressiveSpeedDialFab(
                             Text(
                                 text = stringResource(R.string.scan_action),
                                 style = MaterialTheme.typography.titleMedium.copy(
-                                    fontFamily = InterFamily,
+                                    fontFamily = OnestFamily,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 15.sp
                                 ),

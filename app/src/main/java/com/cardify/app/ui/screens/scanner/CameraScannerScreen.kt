@@ -300,6 +300,7 @@ fun CameraScannerScreen(
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
                 .fillMaxWidth()
+                .widthIn(max = 500.dp)
                 .padding(16.dp),
             shape = PillShape,
             color = Color.Black.copy(alpha = 0.65f),
@@ -396,8 +397,15 @@ private fun ScannerOverlay() {
     )
 
     Canvas(modifier = Modifier.fillMaxSize()) {
-        val boxWidth = size.width * 0.78f
-        val boxHeight = size.width * 0.62f
+        val minDim = minOf(size.width, size.height)
+        val boxWidth = if (size.width > size.height) {
+            // Landscape mode
+            (size.height * 0.75f).coerceIn(240.dp.toPx(), 480.dp.toPx())
+        } else {
+            // Portrait / Square mode
+            (size.width * 0.80f).coerceIn(240.dp.toPx(), 420.dp.toPx())
+        }
+        val boxHeight = boxWidth * 0.62f
         val left = (size.width - boxWidth) / 2
         val top = (size.height - boxHeight) / 2
 

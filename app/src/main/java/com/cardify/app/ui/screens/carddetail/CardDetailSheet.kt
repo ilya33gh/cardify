@@ -122,6 +122,8 @@ fun CardDetailSheet(
         RoundedCornerShape(topStart = 0.dp, bottomStart = 0.dp, topEnd = 20.dp, bottomEnd = 20.dp)
     }
 
+    val windowSizeInfo = MaterialThemeAdaptive
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -137,7 +139,9 @@ fun CardDetailSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 22.dp)
+                .wrapContentWidth(Alignment.CenterHorizontally)
+                .widthIn(max = 620.dp)
+                .padding(horizontal = windowSizeInfo.horizontalPadding)
                 .padding(top = 10.dp, bottom = 32.dp)
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -161,7 +165,7 @@ fun CardDetailSheet(
                         Text(
                             text = displayCatName,
                             style = MaterialTheme.typography.labelLarge.copy(
-                                fontFamily = InterFamily,
+                                fontFamily = OnestFamily,
                                 fontWeight = FontWeight.Bold
                             ),
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
@@ -183,7 +187,7 @@ fun CardDetailSheet(
                 Text(
                     text = card.title,
                     style = MaterialTheme.typography.displaySmall.copy(
-                        fontFamily = SpaceGroteskFamily,
+                        fontFamily = ManropeFamily,
                         fontWeight = FontWeight.Black,
                         fontSize = 28.sp,
                         lineHeight = 32.sp
@@ -259,7 +263,7 @@ fun CardDetailSheet(
                         Text(
                             text = stringResource(R.string.copy_action),
                             style = MaterialTheme.typography.titleMedium.copy(
-                                fontFamily = InterFamily,
+                                fontFamily = OnestFamily,
                                 fontWeight = FontWeight.Bold
                             ),
                             color = copyButtonContent,
@@ -301,7 +305,7 @@ fun CardDetailSheet(
                         Text(
                             text = stringResource(R.string.share_action),
                             style = MaterialTheme.typography.titleMedium.copy(
-                                fontFamily = InterFamily,
+                                fontFamily = OnestFamily,
                                 fontWeight = FontWeight.Bold
                             ),
                             color = shareButtonContent,
@@ -350,7 +354,7 @@ fun CardDetailSheet(
                         Text(
                             text = stringResource(R.string.edit_action),
                             style = MaterialTheme.typography.titleMedium.copy(
-                                fontFamily = InterFamily,
+                                fontFamily = OnestFamily,
                                 fontWeight = FontWeight.Bold
                             ),
                             color = editButtonContent,
@@ -387,7 +391,7 @@ fun CardDetailSheet(
                         Text(
                             text = stringResource(R.string.delete_action),
                             style = MaterialTheme.typography.titleMedium.copy(
-                                fontFamily = InterFamily,
+                                fontFamily = OnestFamily,
                                 fontWeight = FontWeight.Bold
                             ),
                             color = deleteButtonContent,
@@ -453,7 +457,7 @@ fun CardDetailSheet(
                 Text(
                     text = stringResource(R.string.delete_card_dialog_title),
                     fontWeight = FontWeight.Black,
-                    fontFamily = InterFamily,
+                    fontFamily = OnestFamily,
                     maxLines = 1,
                     softWrap = false
                 )
@@ -476,7 +480,7 @@ fun CardDetailSheet(
                     Text(
                         text = stringResource(R.string.delete_action),
                         style = MaterialTheme.typography.titleMedium.copy(
-                            fontFamily = InterFamily,
+                            fontFamily = OnestFamily,
                             fontWeight = FontWeight.Black
                         ),
                         color = Color.White,
@@ -489,7 +493,7 @@ fun CardDetailSheet(
                 TextButton(onClick = { showDeleteConfirm = false }) {
                     Text(
                         text = stringResource(R.string.cancel_action),
-                        style = MaterialTheme.typography.titleMedium.copy(fontFamily = InterFamily),
+                        style = MaterialTheme.typography.titleMedium.copy(fontFamily = OnestFamily),
                         maxLines = 1,
                         softWrap = false
                     )

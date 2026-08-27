@@ -80,6 +80,7 @@
     <string name="cat_gifts">Подарки</string>
     <string name="cat_fitness">Спорт</string>
     <string name="cat_cafe">Кафе</string>
+    <string name="cat_other">Другое</string>
 
     <!-- Scanner -->
     <string name="camera_permission_title">Требуется доступ к камере</string>

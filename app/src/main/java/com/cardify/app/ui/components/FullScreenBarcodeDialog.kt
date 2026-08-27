@@ -40,9 +40,9 @@ import androidx.compose.ui.window.DialogWindowProvider
 import com.cardify.app.R
 import com.cardify.app.barcode.BarcodeGenerator
 import com.cardify.app.domain.model.LoyaltyCard
-import com.cardify.app.ui.theme.InterFamily
+import com.cardify.app.ui.theme.ManropeFamily
+import com.cardify.app.ui.theme.OnestFamily
 import com.cardify.app.ui.theme.PillShape
-import com.cardify.app.ui.theme.SpaceGroteskFamily
 
 /**
  * Fullscreen Barcode Dialog (POS Mode)
@@ -182,7 +182,7 @@ fun FullScreenBarcodeDialog(
                         Text(
                             text = card.title,
                             style = MaterialTheme.typography.titleLarge.copy(
-                                fontFamily = SpaceGroteskFamily,
+                                fontFamily = ManropeFamily,
                                 fontWeight = FontWeight.Black,
                                 fontSize = 20.sp
                             ),
@@ -196,7 +196,7 @@ fun FullScreenBarcodeDialog(
                             Text(
                                 text = displayCat,
                                 style = MaterialTheme.typography.labelMedium.copy(
-                                    fontFamily = InterFamily,
+                                    fontFamily = OnestFamily,
                                     fontWeight = FontWeight.SemiBold
                                 ),
                                 color = Color(0xFF666666),
@@ -225,7 +225,7 @@ fun FullScreenBarcodeDialog(
                             Text(
                                 text = "100%",
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    fontFamily = InterFamily,
+                                    fontFamily = OnestFamily,
                                     fontWeight = FontWeight.Black
                                 ),
                                 color = Color(0xFF2E7D32)
@@ -262,17 +262,32 @@ fun FullScreenBarcodeDialog(
                                 contentScale = ContentScale.Fit
                             )
                         } else {
-                            // 1D Linear Barcode: Rotated 90 degrees to stretch across full screen height
-                            Image(
-                                bitmap = bitmap!!.asImageBitmap(),
-                                contentDescription = card.barcodeValue,
-                                modifier = Modifier
-                                    .size(width = availHeight - 16.dp, height = availWidth - 16.dp)
-                                    .graphicsLayer {
-                                        rotationZ = 90f
-                                    },
-                                contentScale = ContentScale.FillBounds
-                            )
+                            val shouldRotate90 = availHeight > (availWidth * 1.15f)
+
+                            if (shouldRotate90) {
+                                // 1D Linear Barcode on Portrait Phones: Rotated 90 degrees to stretch across full vertical screen height
+                                Image(
+                                    bitmap = bitmap!!.asImageBitmap(),
+                                    contentDescription = card.barcodeValue,
+                                    modifier = Modifier
+                                        .size(width = (availHeight - 20.dp).coerceAtLeast(100.dp), height = (availWidth - 20.dp).coerceAtLeast(60.dp))
+                                        .graphicsLayer {
+                                            rotationZ = 90f
+                                        },
+                                    contentScale = ContentScale.FillBounds
+                                )
+                            } else {
+                                // 1D Linear Barcode on Tablets, Foldables, and Landscape: Display horizontally across full width
+                                Image(
+                                    bitmap = bitmap!!.asImageBitmap(),
+                                    contentDescription = card.barcodeValue,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(min = 140.dp, max = 340.dp)
+                                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                                    contentScale = ContentScale.FillBounds
+                                )
+                            }
                         }
                     } else {
                         Text(
@@ -302,7 +317,9 @@ fun FullScreenBarcodeDialog(
                         },
                         shape = RoundedCornerShape(16.dp),
                         color = Color(0xFFF7F7F7),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = 600.dp)
                     ) {
                         Row(
                             modifier = Modifier

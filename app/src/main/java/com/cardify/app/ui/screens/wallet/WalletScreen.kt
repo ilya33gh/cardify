@@ -221,9 +221,10 @@ fun WalletScreen(
         }
     }
 
+    val windowSizeInfo = MaterialThemeAdaptive
     val coroutineScope = rememberCoroutineScope()
     val density = LocalDensity.current
-    val maxTitleHeightDp = 140.dp
+    val maxTitleHeightDp = if (windowSizeInfo.heightType == WindowType.COMPACT || windowSizeInfo.isLandscape) 70.dp else 140.dp
     val maxTitleHeightPx = with(density) { maxTitleHeightDp.toPx() }
 
     val titleOffset = remember { Animatable(0f) }
@@ -334,7 +335,7 @@ fun WalletScreen(
                         .fillMaxWidth()
                         .background(MaterialTheme.colorScheme.surfaceContainer)
                         .statusBarsPadding()
-                        .padding(horizontal = 20.dp, vertical = 6.dp)
+                        .padding(horizontal = windowSizeInfo.horizontalPadding, vertical = 6.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -398,10 +399,10 @@ fun WalletScreen(
                             Text(
                                 text = "cardify",
                                 style = MaterialTheme.typography.headlineMedium.copy(
-                                    fontFamily = SpaceGroteskFamily,
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 24.sp
-                                ),
+                                fontFamily = ManropeFamily,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 24.sp
+                            ),
                                 color = MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1,
                                 softWrap = false
@@ -520,7 +521,7 @@ fun WalletScreen(
                                 Text(
                                     text = "cardify",
                                     style = MaterialTheme.typography.displayMedium.copy(
-                                        fontFamily = SpaceGroteskFamily,
+                                        fontFamily = ManropeFamily,
                                         fontWeight = FontWeight.Black,
                                         fontSize = (44 * titleFraction).coerceAtLeast(22f).sp,
                                         letterSpacing = (-1.0).sp
@@ -1131,90 +1132,190 @@ fun WalletScreen(
                                                 isSearchActive = isPageFilterActive
                                             )
                                         }
-                                    } else {
+                                     } else {
                                         val pageListState = rememberLazyListState()
                                         val pageGridState = rememberLazyGridState()
+                                        val adaptivePadding = PaddingValues(
+                                            horizontal = windowSizeInfo.horizontalPadding,
+                                            vertical = 6.dp
+                                        )
+
                                         when (uiState.layoutMode) {
                                             LayoutMode.FULL_CARDS -> {
-                                                LazyColumn(
-                                                    state = pageListState,
-                                                    modifier = Modifier.fillMaxSize(),
-                                                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp),
-                                                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                                                ) {
-                                                    items(pageCards, key = { it.id }) { card ->
-                                                        Box {
-                                                            ExpressiveLoyaltyCard(
-                                                                card = card,
-                                                                searchQuery = uiState.searchQuery,
-                                                                onClick = {
-                                                                    triggerHaptic()
-                                                                    viewModel.onCardClicked(card)
-                                                                },
-                                                                onLongClick = { touchOffset ->
-                                                                    triggerHaptic()
-                                                                    pressOffset = touchOffset
-                                                                    activeCardMenuId = card.id
-                                                                }
-                                                            )
+                                                if (windowSizeInfo.isWideScreen) {
+                                                    // On Tablets, Foldables, and Landscape: display cards in a responsive multi-column grid
+                                                    LazyVerticalGrid(
+                                                        state = pageGridState,
+                                                        columns = GridCells.Adaptive(minSize = 340.dp),
+                                                        modifier = Modifier.fillMaxSize(),
+                                                        contentPadding = adaptivePadding,
+                                                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                                                    ) {
+                                                        items(pageCards, key = { it.id }) { card ->
+                                                            Box {
+                                                                ExpressiveLoyaltyCard(
+                                                                    card = card,
+                                                                    searchQuery = uiState.searchQuery,
+                                                                    onClick = {
+                                                                        triggerHaptic()
+                                                                        viewModel.onCardClicked(card)
+                                                                    },
+                                                                    onLongClick = { touchOffset ->
+                                                                        triggerHaptic()
+                                                                        pressOffset = touchOffset
+                                                                        activeCardMenuId = card.id
+                                                                    }
+                                                                )
 
-                                                            DesktopStyleCardContextMenu(
-                                                                expanded = activeCardMenuId == card.id,
-                                                                card = card,
-                                                                pressOffset = pressOffset,
-                                                                onDismissRequest = { activeCardMenuId = null },
-                                                                onToggleFavorite = { viewModel.onToggleFavorite(card) },
-                                                                onEdit = { onNavigateToEditCard(card.id) },
-                                                                onDelete = { cardToDelete = card }
-                                                            )
+                                                                DesktopStyleCardContextMenu(
+                                                                    expanded = activeCardMenuId == card.id,
+                                                                    card = card,
+                                                                    pressOffset = pressOffset,
+                                                                    onDismissRequest = { activeCardMenuId = null },
+                                                                    onToggleFavorite = { viewModel.onToggleFavorite(card) },
+                                                                    onEdit = { onNavigateToEditCard(card.id) },
+                                                                    onDelete = { cardToDelete = card }
+                                                                )
+                                                            }
+                                                        }
+                                                        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                                                            Spacer(modifier = Modifier.height(100.dp))
                                                         }
                                                     }
-                                                    item { Spacer(modifier = Modifier.height(100.dp)) }
+                                                } else {
+                                                    // On Compact Phones: single-column full card stack
+                                                    LazyColumn(
+                                                        state = pageListState,
+                                                        modifier = Modifier.fillMaxSize(),
+                                                        contentPadding = adaptivePadding,
+                                                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                                                    ) {
+                                                        items(pageCards, key = { it.id }) { card ->
+                                                            Box {
+                                                                ExpressiveLoyaltyCard(
+                                                                    card = card,
+                                                                    searchQuery = uiState.searchQuery,
+                                                                    onClick = {
+                                                                        triggerHaptic()
+                                                                        viewModel.onCardClicked(card)
+                                                                    },
+                                                                    onLongClick = { touchOffset ->
+                                                                        triggerHaptic()
+                                                                        pressOffset = touchOffset
+                                                                        activeCardMenuId = card.id
+                                                                    }
+                                                                )
+
+                                                                DesktopStyleCardContextMenu(
+                                                                    expanded = activeCardMenuId == card.id,
+                                                                    card = card,
+                                                                    pressOffset = pressOffset,
+                                                                    onDismissRequest = { activeCardMenuId = null },
+                                                                    onToggleFavorite = { viewModel.onToggleFavorite(card) },
+                                                                    onEdit = { onNavigateToEditCard(card.id) },
+                                                                    onDelete = { cardToDelete = card }
+                                                                )
+                                                            }
+                                                        }
+                                                        item { Spacer(modifier = Modifier.height(100.dp)) }
+                                                    }
                                                 }
                                             }
                                             LayoutMode.LIST_ROWS -> {
-                                                LazyColumn(
-                                                    state = pageListState,
-                                                    modifier = Modifier.fillMaxSize(),
-                                                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp),
-                                                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                                                ) {
-                                                    items(pageCards, key = { it.id }) { card ->
-                                                        Box {
-                                                            ExpressiveLoyaltyCardRow(
-                                                                card = card,
-                                                                searchQuery = uiState.searchQuery,
-                                                                onClick = {
-                                                                    triggerHaptic()
-                                                                    viewModel.onCardClicked(card)
-                                                                },
-                                                                onLongClick = { touchOffset ->
-                                                                    triggerHaptic()
-                                                                    pressOffset = touchOffset
-                                                                    activeCardMenuId = card.id
-                                                                }
-                                                            )
+                                                if (windowSizeInfo.isTablet && windowSizeInfo.isLandscape) {
+                                                    // 2-column rows on very wide tablet landscape
+                                                    LazyVerticalGrid(
+                                                        state = pageGridState,
+                                                        columns = GridCells.Fixed(2),
+                                                        modifier = Modifier.fillMaxSize(),
+                                                        contentPadding = adaptivePadding,
+                                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                                                    ) {
+                                                        items(pageCards, key = { it.id }) { card ->
+                                                            Box {
+                                                                ExpressiveLoyaltyCardRow(
+                                                                    card = card,
+                                                                    searchQuery = uiState.searchQuery,
+                                                                    onClick = {
+                                                                        triggerHaptic()
+                                                                        viewModel.onCardClicked(card)
+                                                                    },
+                                                                    onLongClick = { touchOffset ->
+                                                                        triggerHaptic()
+                                                                        pressOffset = touchOffset
+                                                                        activeCardMenuId = card.id
+                                                                    }
+                                                                )
 
-                                                            DesktopStyleCardContextMenu(
-                                                                expanded = activeCardMenuId == card.id,
-                                                                card = card,
-                                                                pressOffset = pressOffset,
-                                                                onDismissRequest = { activeCardMenuId = null },
-                                                                onToggleFavorite = { viewModel.onToggleFavorite(card) },
-                                                                onEdit = { onNavigateToEditCard(card.id) },
-                                                                onDelete = { cardToDelete = card }
-                                                            )
+                                                                DesktopStyleCardContextMenu(
+                                                                    expanded = activeCardMenuId == card.id,
+                                                                    card = card,
+                                                                    pressOffset = pressOffset,
+                                                                    onDismissRequest = { activeCardMenuId = null },
+                                                                    onToggleFavorite = { viewModel.onToggleFavorite(card) },
+                                                                    onEdit = { onNavigateToEditCard(card.id) },
+                                                                    onDelete = { cardToDelete = card }
+                                                                )
+                                                            }
+                                                        }
+                                                        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                                                            Spacer(modifier = Modifier.height(100.dp))
                                                         }
                                                     }
-                                                    item { Spacer(modifier = Modifier.height(100.dp)) }
+                                                } else {
+                                                    Box(
+                                                        modifier = Modifier.fillMaxSize(),
+                                                        contentAlignment = Alignment.TopCenter
+                                                    ) {
+                                                        LazyColumn(
+                                                            state = pageListState,
+                                                            modifier = Modifier
+                                                                .fillMaxSize()
+                                                                .widthIn(max = 760.dp),
+                                                            contentPadding = adaptivePadding,
+                                                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                                                        ) {
+                                                            items(pageCards, key = { it.id }) { card ->
+                                                                Box {
+                                                                    ExpressiveLoyaltyCardRow(
+                                                                        card = card,
+                                                                        searchQuery = uiState.searchQuery,
+                                                                        onClick = {
+                                                                            triggerHaptic()
+                                                                            viewModel.onCardClicked(card)
+                                                                        },
+                                                                        onLongClick = { touchOffset ->
+                                                                            triggerHaptic()
+                                                                            pressOffset = touchOffset
+                                                                            activeCardMenuId = card.id
+                                                                        }
+                                                                    )
+
+                                                                    DesktopStyleCardContextMenu(
+                                                                        expanded = activeCardMenuId == card.id,
+                                                                        card = card,
+                                                                        pressOffset = pressOffset,
+                                                                        onDismissRequest = { activeCardMenuId = null },
+                                                                        onToggleFavorite = { viewModel.onToggleFavorite(card) },
+                                                                        onEdit = { onNavigateToEditCard(card.id) },
+                                                                        onDelete = { cardToDelete = card }
+                                                                    )
+                                                                }
+                                                            }
+                                                            item { Spacer(modifier = Modifier.height(100.dp)) }
+                                                        }
+                                                    }
                                                 }
                                             }
                                             LayoutMode.GRID_TWO_COLUMNS -> {
+                                                val adaptiveGridCols = windowSizeInfo.getAdaptiveGridColumns(isFullCardMode = false)
                                                 LazyVerticalGrid(
                                                     state = pageGridState,
-                                                    columns = GridCells.Fixed(2),
+                                                    columns = GridCells.Fixed(adaptiveGridCols),
                                                     modifier = Modifier.fillMaxSize(),
-                                                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp),
+                                                    contentPadding = adaptivePadding,
                                                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                                                     verticalArrangement = Arrangement.spacedBy(12.dp)
                                                 ) {
@@ -1245,7 +1346,9 @@ fun WalletScreen(
                                                             )
                                                         }
                                                     }
-                                                    item { Spacer(modifier = Modifier.height(100.dp)) }
+                                                    item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                                                        Spacer(modifier = Modifier.height(100.dp))
+                                                    }
                                                 }
                                             }
                                         }
@@ -1265,7 +1368,7 @@ fun WalletScreen(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .navigationBarsPadding()
-                .padding(end = 18.dp, bottom = 96.dp)
+                .padding(end = windowSizeInfo.horizontalPadding, bottom = 96.dp)
         )
     }
 
