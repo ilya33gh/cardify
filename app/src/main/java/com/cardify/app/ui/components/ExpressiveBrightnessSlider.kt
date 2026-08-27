@@ -2,7 +2,13 @@ package com.cardify.app.ui.components
 
 import android.app.Activity
 import android.provider.Settings
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -15,13 +21,16 @@ import androidx.compose.material.icons.outlined.BrightnessLow
 import androidx.compose.material.icons.outlined.BrightnessMedium
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -29,7 +38,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogWindowProvider
 import com.cardify.app.R
-import com.cardify.app.ui.theme.InterFamily
+import com.cardify.app.ui.theme.ManropeFamily
+import com.cardify.app.ui.theme.OnestFamily
 
 /**
  * Material 3 Expressive Brightness Slider with title, icon, percentage display, and high-frequency tactile haptics.
@@ -105,136 +115,179 @@ fun ExpressiveBrightnessSlider(
         }
     }
 
-    val trackHeight = 14.dp
-    val thumbWidth = 6.dp
+    var isInteracting by remember { mutableStateOf(false) }
+
+    val activeTrackHeight = 22.dp
+    val inactiveTrackHeight = 14.dp
+    val thumbWidth = 5.dp
     val thumbHeight = 36.dp
+    val pillSize = 54.dp
 
     val activeTrackColor = MaterialTheme.colorScheme.primary
     val inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest
     val thumbColor = MaterialTheme.colorScheme.primary
 
     val brightnessPercent = (sliderValue * 100).toInt()
-    val brightnessIcon = when {
-        sliderValue < 0.35f -> Icons.Outlined.BrightnessLow
-        sliderValue < 0.70f -> Icons.Outlined.BrightnessMedium
-        else -> Icons.Outlined.BrightnessHigh
-    }
+
+    val pillAlpha by animateFloatAsState(
+        targetValue = if (isInteracting) 1f else 0f,
+        animationSpec = tween(durationMillis = 140),
+        label = "brightnessPillAlpha"
+    )
+    val pillScale by animateFloatAsState(
+        targetValue = if (isInteracting) 1f else 0.6f,
+        animationSpec = spring(dampingRatio = 0.65f, stiffness = Spring.StiffnessMediumLow),
+        label = "brightnessPillScale"
+    )
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+            .padding(vertical = 2.dp),
+        verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
-        // Brightness Header: Icon + Label (Left), Percentage (Right)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = brightnessIcon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(18.dp)
-                )
-                Text(
-                    text = stringResource(R.string.brightness_label),
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        fontFamily = InterFamily,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-            Text(
-                text = "$brightnessPercent%",
-                style = MaterialTheme.typography.labelMedium.copy(
-                    fontFamily = InterFamily,
-                    fontWeight = FontWeight.Black,
-                    fontSize = 14.sp
-                ),
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
+        // Brightness Header (Positioned higher, with track right underneath)
+        Text(
+            text = stringResource(R.string.brightness_label),
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontFamily = ManropeFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp
+            ),
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(start = 2.dp, top = 8.dp, bottom = 2.dp)
+        )
 
         BoxWithConstraints(
-            modifier = Modifier.fillMaxWidth(),
-            contentAlignment = Alignment.Center
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(thumbHeight),
+            contentAlignment = Alignment.CenterStart
         ) {
             val totalWidthPx = constraints.maxWidth.toFloat()
             val availableWidth = maxWidth
 
+            // Thumb and Pill positioning: strictly aligned to the vertical thumb center
+            val thumbOffsetDp = (availableWidth - thumbWidth) * sliderValue
+            val thumbCenterDp = thumbOffsetDp + (thumbWidth / 2)
+            val badgeOffsetDp = thumbCenterDp - (pillSize / 2)
+
+            // 1. Floating Value Bubble Badge (Higher vertically, floats above thumb, no % sign)
+            if (pillAlpha > 0.01f) {
+                Surface(
+                    modifier = Modifier
+                        .offset(x = badgeOffsetDp, y = (-48).dp)
+                        .size(pillSize)
+                        .graphicsLayer {
+                            alpha = pillAlpha
+                            scaleX = pillScale
+                            scaleY = pillScale
+                        },
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    shadowElevation = 6.dp,
+                    border = null
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "$brightnessPercent",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontFamily = OnestFamily,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 16.sp
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+
+            // 2. Track & Thumb Gesture Area with unified touch & continuous drag detection
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(thumbHeight)
                     .pointerInput(totalWidthPx) {
-                        detectTapGestures { offset ->
-                            val newFraction = (offset.x / totalWidthPx).coerceIn(0f, 1f)
-                            applyBrightness(newFraction)
-                        }
-                    }
-                    .pointerInput(totalWidthPx) {
-                        detectHorizontalDragGestures { change, _ ->
-                            change.consume()
-                            val newFraction = (change.position.x / totalWidthPx).coerceIn(0f, 1f)
-                            applyBrightness(newFraction)
+                        awaitEachGesture {
+                            val down = awaitFirstDown(requireUnconsumed = false)
+                            isInteracting = true
+                            val initialFraction = (down.position.x / totalWidthPx).coerceIn(0f, 1f)
+                            applyBrightness(initialFraction)
+
+                            val pointerId = down.id
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                val change = event.changes.find { it.id == pointerId } ?: break
+                                if (!change.pressed) {
+                                    break
+                                }
+                                if (change.positionChanged()) {
+                                    change.consume()
+                                    val currentFraction = (change.position.x / totalWidthPx).coerceIn(0f, 1f)
+                                    applyBrightness(currentFraction)
+                                }
+                            }
+                            isInteracting = false
                         }
                     },
                 contentAlignment = Alignment.CenterStart
             ) {
-                // Track Container (Thin 14.dp Capsule Line)
+                // Asymmetric Track Container: Active track (thicker, 22.dp), Inactive track (standard, 14.dp)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(trackHeight)
-                        .clip(RoundedCornerShape(7.dp)),
+                        .height(activeTrackHeight),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Active Track (Left)
+                    // Active Track (Thick 22.dp Capsule with left dot)
                     Box(
                         modifier = Modifier
                             .fillMaxHeight()
                             .weight(sliderValue.coerceAtLeast(0.01f))
-                            .clip(RoundedCornerShape(topStart = 7.dp, bottomStart = 7.dp, topEnd = 4.dp, bottomEnd = 4.dp))
-                        .background(activeTrackColor)
-                    )
+                            .clip(RoundedCornerShape(topStart = 11.dp, bottomStart = 11.dp, topEnd = 4.dp, bottomEnd = 4.dp))
+                            .background(activeTrackColor),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .padding(start = 7.dp)
+                                .size(5.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f))
+                        )
+                    }
 
                     Spacer(modifier = Modifier.width(3.dp))
 
-                    // Inactive Track (Right) with end dot
+                    // Inactive Track (Standard 14.dp Capsule with right dot)
                     Box(
                         modifier = Modifier
-                            .fillMaxHeight()
+                            .height(inactiveTrackHeight)
                             .weight((1f - sliderValue).coerceAtLeast(0.01f))
-                            .clip(RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp, topEnd = 7.dp, bottomEnd = 7.dp))
+                            .clip(RoundedCornerShape(topStart = 3.dp, bottomStart = 3.dp, topEnd = 7.dp, bottomEnd = 7.dp))
                             .background(inactiveTrackColor),
                         contentAlignment = Alignment.CenterEnd
                     ) {
                         Box(
                             modifier = Modifier
-                                .padding(end = 8.dp)
-                                .size(5.dp)
+                                .padding(end = 6.dp)
+                                .size(4.dp)
                                 .clip(CircleShape)
-                                .background(activeTrackColor.copy(alpha = 0.5f))
+                                .background(MaterialTheme.colorScheme.outlineVariant)
                         )
                     }
                 }
 
-                // Thumb Handle (Vertical Pill sliding along track)
-                val thumbOffsetDp = (availableWidth - thumbWidth) * sliderValue
+                // Vertical Thumb Pill Handle (Photo 6)
                 Box(
                     modifier = Modifier
                         .offset(x = thumbOffsetDp)
                         .width(thumbWidth)
                         .height(thumbHeight)
-                        .clip(RoundedCornerShape(3.dp))
+                        .clip(RoundedCornerShape(2.5.dp))
                         .background(thumbColor)
                 )
             }

@@ -32,6 +32,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -52,7 +53,9 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -90,6 +93,7 @@ import com.cardify.app.ui.theme.*
 @Composable
 fun WalletScreen(
     viewModel: WalletViewModel,
+    isWalletTop: Boolean = true,
     onNavigateToScanner: () -> Unit,
     onNavigateToAddCard: () -> Unit,
     onNavigateToEditCard: (Long) -> Unit,
@@ -224,27 +228,29 @@ fun WalletScreen(
     val windowSizeInfo = MaterialThemeAdaptive
     val coroutineScope = rememberCoroutineScope()
     val density = LocalDensity.current
-    val maxTitleHeightDp = if (windowSizeInfo.heightType == WindowType.COMPACT || windowSizeInfo.isLandscape) 70.dp else 140.dp
-    val maxTitleHeightPx = with(density) { maxTitleHeightDp.toPx() }
+    val maxCollapseDp = if (windowSizeInfo.heightType == WindowType.COMPACT || windowSizeInfo.isLandscape) 60.dp else 92.dp
+    val maxCollapsePx = with(density) { maxCollapseDp.toPx() }
 
-    val titleOffset = remember { Animatable(0f) }
-    val titleFraction by remember {
-        derivedStateOf { (titleOffset.value / maxTitleHeightPx).coerceIn(0f, 1f) }
+    var headerCollapseOffsetPx by remember { mutableFloatStateOf(0f) }
+    val settleAnim = remember { Animatable(0f) }
+
+    val expandFraction by remember {
+        derivedStateOf {
+            if (maxCollapsePx > 0f) {
+                (1f - (-headerCollapseOffsetPx / maxCollapsePx)).coerceIn(0f, 1f)
+            } else 1f
+        }
     }
 
-    val nestedScrollConnection = remember(maxTitleHeightPx) {
+    val nestedScrollConnection = remember(maxCollapsePx) {
         object : NestedScrollConnection {
-            // 1:1 Immediate Direct Finger Tracking on Scroll (Standard Android scroll feel)
+            // 1:1 Instantaneous Zero-Allocation Finger Tracking on Scroll (True 120 FPS)
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                 val delta = available.y
-                if (delta < 0f && titleOffset.value > 0f) {
-                    val currentVal = titleOffset.value
-                    val newOffset = (currentVal + delta).coerceIn(0f, maxTitleHeightPx)
-                    val consumed = newOffset - currentVal
-                    coroutineScope.launch {
-                        titleOffset.snapTo(newOffset)
-                    }
-                    return Offset(0f, consumed)
+                if (delta < 0f && headerCollapseOffsetPx > -maxCollapsePx) {
+                    val prev = headerCollapseOffsetPx
+                    headerCollapseOffsetPx = (headerCollapseOffsetPx + delta).coerceIn(-maxCollapsePx, 0f)
+                    return Offset(0f, headerCollapseOffsetPx - prev)
                 }
                 return Offset.Zero
             }
@@ -255,14 +261,10 @@ fun WalletScreen(
                 source: NestedScrollSource
             ): Offset {
                 val delta = available.y
-                if (delta > 0f && titleOffset.value < maxTitleHeightPx) {
-                    val currentVal = titleOffset.value
-                    val newOffset = (currentVal + delta).coerceIn(0f, maxTitleHeightPx)
-                    val consumedY = newOffset - currentVal
-                    coroutineScope.launch {
-                        titleOffset.snapTo(newOffset)
-                    }
-                    return Offset(0f, consumedY)
+                if (delta > 0f && source == NestedScrollSource.UserInput && headerCollapseOffsetPx < 0f) {
+                    val prev = headerCollapseOffsetPx
+                    headerCollapseOffsetPx = (headerCollapseOffsetPx + delta).coerceIn(-maxCollapsePx, 0f)
+                    return Offset(0f, headerCollapseOffsetPx - prev)
                 }
                 return Offset.Zero
             }
@@ -270,15 +272,18 @@ fun WalletScreen(
             // Smooth 120 FPS Momentum Deceleration & Spring Settle (Standard Android fling)
             override suspend fun onPreFling(available: Velocity): Velocity {
                 val vy = available.y
-                if (vy < -250f && titleOffset.value > 0f) {
-                    titleOffset.animateTo(
-                        targetValue = 0f,
+                if (vy < -250f && headerCollapseOffsetPx > -maxCollapsePx) {
+                    settleAnim.snapTo(headerCollapseOffsetPx)
+                    settleAnim.animateTo(
+                        targetValue = -maxCollapsePx,
                         initialVelocity = vy,
                         animationSpec = spring(
                             dampingRatio = 0.88f,
                             stiffness = 380f
                         )
-                    )
+                    ) {
+                        headerCollapseOffsetPx = value
+                    }
                     return Velocity.Zero
                 }
                 return super.onPreFling(available)
@@ -286,25 +291,31 @@ fun WalletScreen(
 
             override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
                 val vy = available.y
-                if (vy > 250f && titleOffset.value < maxTitleHeightPx) {
-                    titleOffset.animateTo(
-                        targetValue = maxTitleHeightPx,
+                if (vy > 250f && headerCollapseOffsetPx < 0f) {
+                    settleAnim.snapTo(headerCollapseOffsetPx)
+                    settleAnim.animateTo(
+                        targetValue = 0f,
                         initialVelocity = vy,
                         animationSpec = spring(
                             dampingRatio = 0.88f,
                             stiffness = 380f
                         )
-                    )
+                    ) {
+                        headerCollapseOffsetPx = value
+                    }
                     return Velocity.Zero
-                } else if (titleOffset.value > 0f && titleOffset.value < maxTitleHeightPx) {
-                    val target = if (titleOffset.value > maxTitleHeightPx * 0.45f) maxTitleHeightPx else 0f
-                    titleOffset.animateTo(
+                } else if (headerCollapseOffsetPx < 0f && headerCollapseOffsetPx > -maxCollapsePx) {
+                    val target = if (headerCollapseOffsetPx > -maxCollapsePx * 0.5f) 0f else -maxCollapsePx
+                    settleAnim.snapTo(headerCollapseOffsetPx)
+                    settleAnim.animateTo(
                         targetValue = target,
                         animationSpec = spring(
                             dampingRatio = 0.88f,
                             stiffness = 380f
                         )
-                    )
+                    ) {
+                        headerCollapseOffsetPx = value
+                    }
                 }
                 return super.onPostFling(consumed, available)
             }
@@ -330,86 +341,106 @@ fun WalletScreen(
         Scaffold(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
             topBar = {
-                Column(
+                val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+                val topBarHeight = 56.dp + (maxCollapseDp * expandFraction) + statusBarHeight
+
+                val logoInteractionSource = remember { MutableInteractionSource() }
+                val isLogoPressed by logoInteractionSource.collectIsPressedAsState()
+                val logoPressScale by animateFloatAsState(
+                    targetValue = if (isLogoPressed) 0.92f else 1.0f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessMedium
+                    ),
+                    label = "logoPressScale"
+                )
+
+                val brandTravelDistancePx = with(density) { (50.dp + ((maxCollapseDp - 46.dp) / 2)).toPx() }
+
+                Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surfaceContainer)
-                        .statusBarsPadding()
-                        .padding(horizontal = windowSizeInfo.horizontalPadding, vertical = 6.dp)
+                        .height(topBarHeight),
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    tonalElevation = 0.dp,
+                    shadowElevation = 0.dp
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = statusBarHeight)
+                            .padding(horizontal = windowSizeInfo.horizontalPadding)
                     ) {
-                        val collapsedAlpha = (1f - (titleFraction * 1.8f)).coerceIn(0f, 1f)
-                        val topLogoInteractionSource = remember { MutableInteractionSource() }
-                        val isTopLogoPressed by topLogoInteractionSource.collectIsPressedAsState()
-                        val topLogoScale by animateFloatAsState(
-                            targetValue = if (isTopLogoPressed) 0.90f else 1.0f,
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                stiffness = Spring.StiffnessMedium
-                            ),
-                            label = "topLogoScale"
-                        )
-
+                        // Single Unified Morphing Logo + "cardify" Title (Centered between search and chips in expanded state)
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
                             modifier = Modifier
+                                .padding(top = 6.dp)
                                 .graphicsLayer {
-                                    alpha = collapsedAlpha
-                                    scaleX = topLogoScale
-                                    scaleY = topLogoScale
+                                    val currentScale = (1f + (0.45f * expandFraction)) * logoPressScale
+                                    scaleX = currentScale
+                                    scaleY = currentScale
+                                    transformOrigin = TransformOrigin(0f, 0.5f)
+                                    translationY = expandFraction * brandTravelDistancePx
                                 }
                                 .clickable(
-                                    interactionSource = topLogoInteractionSource,
-                                    indication = null,
-                                    enabled = collapsedAlpha > 0.05f
+                                    interactionSource = logoInteractionSource,
+                                    indication = null
                                 ) {
                                     triggerHaptic()
                                     coroutineScope.launch {
-                                        titleOffset.animateTo(
-                                            targetValue = maxTitleHeightPx,
+                                        settleAnim.snapTo(headerCollapseOffsetPx)
+                                        val target = if (expandFraction < 0.5f) 0f else -maxCollapsePx
+                                        settleAnim.animateTo(
+                                            targetValue = target,
                                             animationSpec = spring(
                                                 dampingRatio = 0.88f,
                                                 stiffness = 380f
                                             )
-                                        )
+                                        ) {
+                                            headerCollapseOffsetPx = value
+                                        }
                                     }
                                 }
-                                .padding(vertical = 2.dp, horizontal = 2.dp)
+                                .padding(vertical = 4.dp)
                         ) {
                             Surface(
-                                shape = RoundedCornerShape(14.dp),
+                                shape = RoundedCornerShape(12.dp),
                                 color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(42.dp)
+                                tonalElevation = 0.dp,
+                                shadowElevation = 0.dp,
+                                modifier = Modifier.size(38.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         painter = painterResource(R.drawable.ic_app_logo),
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.onPrimary,
-                                        modifier = Modifier.size(24.dp)
+                                        modifier = Modifier.size(22.dp)
                                     )
                                 }
                             }
 
                             Text(
                                 text = "cardify",
-                                style = MaterialTheme.typography.headlineMedium.copy(
-                                fontFamily = ManropeFamily,
-                                fontWeight = FontWeight.Black,
-                                fontSize = 24.sp
-                            ),
+                                style = MaterialTheme.typography.displayMedium.copy(
+                                    fontFamily = ManropeFamily,
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 24.sp,
+                                    letterSpacing = (-0.5).sp
+                                ),
                                 color = MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1,
                                 softWrap = false
                             )
                         }
 
+                        // Top-Right Action Buttons (Search & Settings)
                         Row(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(top = 6.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
@@ -417,6 +448,8 @@ fun WalletScreen(
                                 shape = CircleShape,
                                 color = searchButtonContainerColor,
                                 border = null,
+                                tonalElevation = 0.dp,
+                                shadowElevation = 0.dp,
                                 modifier = Modifier.size(42.dp)
                             ) {
                                 IconButton(onClick = {
@@ -443,6 +476,8 @@ fun WalletScreen(
                                 shape = CircleShape,
                                 color = MaterialTheme.colorScheme.surfaceContainerHighest,
                                 border = null,
+                                tonalElevation = 0.dp,
+                                shadowElevation = 0.dp,
                                 modifier = Modifier.size(42.dp)
                             ) {
                                 IconButton(onClick = {
@@ -452,84 +487,10 @@ fun WalletScreen(
                                     Icon(
                                         imageVector = Icons.Outlined.Settings,
                                         contentDescription = stringResource(R.string.settings_title),
-                                        tint = MaterialTheme.colorScheme.onSurface
+                                        tint = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.size(22.dp)
                                     )
                                 }
-                            }
-                        }
-                    }
-
-                    if (titleFraction > 0.01f) {
-                        val expandedLogoInteractionSource = remember { MutableInteractionSource() }
-                        val isExpandedLogoPressed by expandedLogoInteractionSource.collectIsPressedAsState()
-                        val expandedLogoScale by animateFloatAsState(
-                            targetValue = if (isExpandedLogoPressed) 0.94f else 1.0f,
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                stiffness = Spring.StiffnessMedium
-                            ),
-                            label = "expandedLogoScale"
-                        )
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(maxTitleHeightDp * titleFraction)
-                                .padding(horizontal = 4.dp, vertical = 8.dp * titleFraction),
-                            contentAlignment = Alignment.CenterStart
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                modifier = Modifier
-                                    .graphicsLayer {
-                                        alpha = titleFraction.coerceIn(0f, 1f)
-                                        scaleX = expandedLogoScale
-                                        scaleY = expandedLogoScale
-                                    }
-                                    .clickable(
-                                        interactionSource = expandedLogoInteractionSource,
-                                        indication = null
-                                    ) {
-                                        triggerHaptic()
-                                        coroutineScope.launch {
-                                            titleOffset.animateTo(
-                                                targetValue = 0f,
-                                                animationSpec = spring(
-                                                    dampingRatio = 0.88f,
-                                                    stiffness = 380f
-                                                )
-                                            )
-                                        }
-                                    }
-                            ) {
-                                Surface(
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size((46 * titleFraction).coerceAtLeast(26f).dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            painter = painterResource(R.drawable.ic_app_logo),
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.onPrimary,
-                                            modifier = Modifier.size((26 * titleFraction).coerceAtLeast(16f).dp)
-                                        )
-                                    }
-                                }
-
-                                Text(
-                                    text = "cardify",
-                                    style = MaterialTheme.typography.displayMedium.copy(
-                                        fontFamily = ManropeFamily,
-                                        fontWeight = FontWeight.Black,
-                                        fontSize = (44 * titleFraction).coerceAtLeast(22f).sp,
-                                        letterSpacing = (-1.0).sp
-                                    ),
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    maxLines = 1,
-                                    softWrap = false
-                                )
                             }
                         }
                     }
@@ -769,20 +730,21 @@ fun WalletScreen(
                                     expanded = showSortMenu,
                                     onDismissRequest = { showSortMenu = false },
                                     offset = DpOffset(0.dp, 8.dp),
-                                    shape = RoundedCornerShape(12.dp),
+                                    shape = RoundedCornerShape(14.dp),
                                     containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                                     tonalElevation = 4.dp,
                                     shadowElevation = 8.dp,
                                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-                                    modifier = Modifier.width(220.dp)
+                                    modifier = Modifier.width(240.dp)
                                 ) {
                                     DropdownMenuItem(
                                         text = {
                                             Text(
                                                 text = stringResource(R.string.sort_alphabetical),
-                                                style = MaterialTheme.typography.bodyMedium.copy(
-                                                    fontFamily = InterFamily,
-                                                    fontWeight = if (uiState.sortOrder == SortOrder.ALPHABETICAL) FontWeight.Bold else FontWeight.Medium
+                                                style = MaterialTheme.typography.bodyLarge.copy(
+                                                    fontFamily = OnestFamily,
+                                                    fontWeight = if (uiState.sortOrder == SortOrder.ALPHABETICAL) FontWeight.Bold else FontWeight.Medium,
+                                                    fontSize = 17.sp
                                                 ),
                                                 color = MaterialTheme.colorScheme.onSurface
                                             )
@@ -793,7 +755,7 @@ fun WalletScreen(
                                                     imageVector = Icons.Default.Check,
                                                     contentDescription = null,
                                                     tint = MaterialTheme.colorScheme.onSurface,
-                                                    modifier = Modifier.size(18.dp)
+                                                    modifier = Modifier.size(20.dp)
                                                 )
                                             }
                                         },
@@ -802,7 +764,7 @@ fun WalletScreen(
                                             viewModel.setSortOrder(SortOrder.ALPHABETICAL)
                                             showSortMenu = false
                                         },
-                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
+                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
                                     )
 
                                     HorizontalDivider(
@@ -814,9 +776,10 @@ fun WalletScreen(
                                         text = {
                                             Text(
                                                 text = stringResource(R.string.sort_date_added),
-                                                style = MaterialTheme.typography.bodyMedium.copy(
-                                                    fontFamily = InterFamily,
-                                                    fontWeight = if (uiState.sortOrder == SortOrder.DATE_ADDED) FontWeight.Bold else FontWeight.Medium
+                                                style = MaterialTheme.typography.bodyLarge.copy(
+                                                    fontFamily = OnestFamily,
+                                                    fontWeight = if (uiState.sortOrder == SortOrder.DATE_ADDED) FontWeight.Bold else FontWeight.Medium,
+                                                    fontSize = 17.sp
                                                 ),
                                                 color = MaterialTheme.colorScheme.onSurface
                                             )
@@ -827,7 +790,7 @@ fun WalletScreen(
                                                     imageVector = Icons.Default.Check,
                                                     contentDescription = null,
                                                     tint = MaterialTheme.colorScheme.onSurface,
-                                                    modifier = Modifier.size(18.dp)
+                                                    modifier = Modifier.size(20.dp)
                                                 )
                                             }
                                         },
@@ -836,7 +799,7 @@ fun WalletScreen(
                                             viewModel.setSortOrder(SortOrder.DATE_ADDED)
                                             showSortMenu = false
                                         },
-                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
+                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
                                     )
 
                                     HorizontalDivider(
@@ -848,9 +811,10 @@ fun WalletScreen(
                                         text = {
                                             Text(
                                                 text = stringResource(R.string.sort_frequency),
-                                                style = MaterialTheme.typography.bodyMedium.copy(
-                                                    fontFamily = InterFamily,
-                                                    fontWeight = if (uiState.sortOrder == SortOrder.FREQUENCY) FontWeight.Bold else FontWeight.Medium
+                                                style = MaterialTheme.typography.bodyLarge.copy(
+                                                    fontFamily = OnestFamily,
+                                                    fontWeight = if (uiState.sortOrder == SortOrder.FREQUENCY) FontWeight.Bold else FontWeight.Medium,
+                                                    fontSize = 17.sp
                                                 ),
                                                 color = MaterialTheme.colorScheme.onSurface
                                             )
@@ -861,7 +825,7 @@ fun WalletScreen(
                                                     imageVector = Icons.Default.Check,
                                                     contentDescription = null,
                                                     tint = MaterialTheme.colorScheme.onSurface,
-                                                    modifier = Modifier.size(18.dp)
+                                                    modifier = Modifier.size(20.dp)
                                                 )
                                             }
                                         },
@@ -913,20 +877,21 @@ fun WalletScreen(
                                     expanded = showLayoutMenu,
                                     onDismissRequest = { showLayoutMenu = false },
                                     offset = DpOffset(0.dp, 8.dp),
-                                    shape = RoundedCornerShape(12.dp),
+                                    shape = RoundedCornerShape(14.dp),
                                     containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                                     tonalElevation = 4.dp,
                                     shadowElevation = 8.dp,
                                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-                                    modifier = Modifier.width(220.dp)
+                                    modifier = Modifier.width(240.dp)
                                 ) {
                                     DropdownMenuItem(
                                         text = {
                                             Text(
                                                 text = stringResource(R.string.layout_full_cards),
-                                                style = MaterialTheme.typography.bodyMedium.copy(
-                                                    fontFamily = InterFamily,
-                                                    fontWeight = if (uiState.layoutMode == LayoutMode.FULL_CARDS) FontWeight.Bold else FontWeight.Medium
+                                                style = MaterialTheme.typography.bodyLarge.copy(
+                                                    fontFamily = OnestFamily,
+                                                    fontWeight = if (uiState.layoutMode == LayoutMode.FULL_CARDS) FontWeight.Bold else FontWeight.Medium,
+                                                    fontSize = 17.sp
                                                 ),
                                                 color = MaterialTheme.colorScheme.onSurface
                                             )
@@ -936,7 +901,7 @@ fun WalletScreen(
                                                 imageVector = Icons.Outlined.ViewAgenda,
                                                 contentDescription = null,
                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.size(20.dp)
+                                                modifier = Modifier.size(22.dp)
                                             )
                                         },
                                         trailingIcon = {
@@ -945,7 +910,7 @@ fun WalletScreen(
                                                     imageVector = Icons.Default.Check,
                                                     contentDescription = null,
                                                     tint = MaterialTheme.colorScheme.onSurface,
-                                                    modifier = Modifier.size(18.dp)
+                                                    modifier = Modifier.size(20.dp)
                                                 )
                                             }
                                         },
@@ -954,7 +919,7 @@ fun WalletScreen(
                                             viewModel.setLayoutMode(LayoutMode.FULL_CARDS, context)
                                             showLayoutMenu = false
                                         },
-                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
+                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
                                     )
 
                                     HorizontalDivider(
@@ -966,9 +931,10 @@ fun WalletScreen(
                                         text = {
                                             Text(
                                                 text = stringResource(R.string.layout_list_rows),
-                                                style = MaterialTheme.typography.bodyMedium.copy(
-                                                    fontFamily = InterFamily,
-                                                    fontWeight = if (uiState.layoutMode == LayoutMode.LIST_ROWS) FontWeight.Bold else FontWeight.Medium
+                                                style = MaterialTheme.typography.bodyLarge.copy(
+                                                    fontFamily = OnestFamily,
+                                                    fontWeight = if (uiState.layoutMode == LayoutMode.LIST_ROWS) FontWeight.Bold else FontWeight.Medium,
+                                                    fontSize = 17.sp
                                                 ),
                                                 color = MaterialTheme.colorScheme.onSurface
                                             )
@@ -978,7 +944,7 @@ fun WalletScreen(
                                                 imageVector = Icons.Outlined.ViewStream,
                                                 contentDescription = null,
                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.size(20.dp)
+                                                modifier = Modifier.size(22.dp)
                                             )
                                         },
                                         trailingIcon = {
@@ -987,7 +953,7 @@ fun WalletScreen(
                                                     imageVector = Icons.Default.Check,
                                                     contentDescription = null,
                                                     tint = MaterialTheme.colorScheme.onSurface,
-                                                    modifier = Modifier.size(18.dp)
+                                                    modifier = Modifier.size(20.dp)
                                                 )
                                             }
                                         },
@@ -996,7 +962,7 @@ fun WalletScreen(
                                             viewModel.setLayoutMode(LayoutMode.LIST_ROWS, context)
                                             showLayoutMenu = false
                                         },
-                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
+                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
                                     )
 
                                     HorizontalDivider(
@@ -1008,9 +974,10 @@ fun WalletScreen(
                                         text = {
                                             Text(
                                                 text = stringResource(R.string.layout_grid_2col),
-                                                style = MaterialTheme.typography.bodyMedium.copy(
-                                                    fontFamily = InterFamily,
-                                                    fontWeight = if (uiState.layoutMode == LayoutMode.GRID_TWO_COLUMNS) FontWeight.Bold else FontWeight.Medium
+                                                style = MaterialTheme.typography.bodyLarge.copy(
+                                                    fontFamily = OnestFamily,
+                                                    fontWeight = if (uiState.layoutMode == LayoutMode.GRID_TWO_COLUMNS) FontWeight.Bold else FontWeight.Medium,
+                                                    fontSize = 17.sp
                                                 ),
                                                 color = MaterialTheme.colorScheme.onSurface
                                             )
@@ -1020,7 +987,7 @@ fun WalletScreen(
                                                 imageVector = Icons.Outlined.GridView,
                                                 contentDescription = null,
                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.size(20.dp)
+                                                modifier = Modifier.size(22.dp)
                                             )
                                         },
                                         trailingIcon = {
@@ -1029,7 +996,7 @@ fun WalletScreen(
                                                     imageVector = Icons.Default.Check,
                                                     contentDescription = null,
                                                     tint = MaterialTheme.colorScheme.onSurface,
-                                                    modifier = Modifier.size(18.dp)
+                                                    modifier = Modifier.size(20.dp)
                                                 )
                                             }
                                         },
@@ -1038,7 +1005,7 @@ fun WalletScreen(
                                             viewModel.setLayoutMode(LayoutMode.GRID_TWO_COLUMNS, context)
                                             showLayoutMenu = false
                                         },
-                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
+                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
                                     )
                                 }
                             }
@@ -1275,13 +1242,15 @@ fun WalletScreen(
                                                                 .fillMaxSize()
                                                                 .widthIn(max = 760.dp),
                                                             contentPadding = adaptivePadding,
-                                                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                                                            verticalArrangement = Arrangement.spacedBy(3.dp)
                                                         ) {
-                                                            items(pageCards, key = { it.id }) { card ->
+                                                            itemsIndexed(pageCards, key = { _, it -> it.id }) { index, card ->
                                                                 Box {
                                                                     ExpressiveLoyaltyCardRow(
                                                                         card = card,
                                                                         searchQuery = uiState.searchQuery,
+                                                                        index = index,
+                                                                        totalCount = pageCards.size,
                                                                         onClick = {
                                                                             triggerHaptic()
                                                                             viewModel.onCardClicked(card)
@@ -1372,15 +1341,17 @@ fun WalletScreen(
         )
     }
 
-    // POS Mode / Detail Bottom Sheet
-    uiState.selectedCardForDetail?.let { card ->
-        CardDetailSheet(
-            card = card,
-            onDismiss = { viewModel.onDismissCardDetail() },
-            onEditCard = onNavigateToEditCard,
-            onDeleteCard = { viewModel.onDeleteCard(it) },
-            onToggleFavorite = { viewModel.onToggleFavorite(card) }
-        )
+    // POS Mode / Detail Bottom Sheet (Rendered only when Wallet is the top visible destination)
+    if (isWalletTop) {
+        uiState.selectedCardForDetail?.let { card ->
+            CardDetailSheet(
+                card = card,
+                onDismiss = { viewModel.onDismissCardDetail() },
+                onEditCard = onNavigateToEditCard,
+                onDeleteCard = { viewModel.onDeleteCard(it) },
+                onToggleFavorite = { viewModel.onToggleFavorite(card) }
+            )
+        }
     }
 
     // Card Delete Confirmation Dialog (Context Menu & Screen trigger)
@@ -1502,12 +1473,12 @@ private fun DesktopStyleCardContextMenu(
             )
         ) {
             Surface(
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(14.dp),
                 color = MaterialTheme.colorScheme.surfaceContainerHighest,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
                 tonalElevation = 4.dp,
                 shadowElevation = 8.dp,
-                modifier = Modifier.width(220.dp)
+                modifier = Modifier.width(240.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(vertical = 6.dp)
@@ -1524,16 +1495,16 @@ private fun DesktopStyleCardContextMenu(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 text = if (card.isFavorite) stringResource(R.string.remove_favorite) else stringResource(R.string.add_favorite),
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontFamily = InterFamily,
-                                    fontWeight = FontWeight.Medium,
-                                    fontSize = 15.sp
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontFamily = OnestFamily,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 17.sp
                                 ),
                                 color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.weight(1f)
@@ -1543,7 +1514,7 @@ private fun DesktopStyleCardContextMenu(
                                 imageVector = if (card.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                                 contentDescription = null,
                                 tint = if (card.isFavorite) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                     }
@@ -1565,16 +1536,16 @@ private fun DesktopStyleCardContextMenu(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 text = stringResource(R.string.edit_action),
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontFamily = InterFamily,
-                                    fontWeight = FontWeight.Medium,
-                                    fontSize = 15.sp
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontFamily = OnestFamily,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 17.sp
                                 ),
                                 color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.weight(1f)
@@ -1584,7 +1555,7 @@ private fun DesktopStyleCardContextMenu(
                                 imageVector = Icons.Outlined.Edit,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                     }
@@ -1606,16 +1577,16 @@ private fun DesktopStyleCardContextMenu(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 text = stringResource(R.string.delete_action),
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontFamily = InterFamily,
-                                    fontWeight = FontWeight.Medium,
-                                    fontSize = 15.sp
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontFamily = OnestFamily,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 17.sp
                                 ),
                                 color = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.weight(1f)
@@ -1625,7 +1596,7 @@ private fun DesktopStyleCardContextMenu(
                                 imageVector = Icons.Outlined.Delete,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                     }
