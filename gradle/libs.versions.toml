@@ -12,7 +12,6 @@ materialIconsExtended = "1.7.6"
 navigationCompose = "2.8.5"
 room = "2.6.1"
 camera = "1.4.1"
-mlkitBarcode = "17.3.0"
 zxing = "3.5.3"
 gson = "2.11.0"
 coil = "2.7.0"
@@ -33,7 +32,6 @@ androidx-ui = { group = "androidx.compose.ui", name = "ui" }
 androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
 androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
-androidx-ui-text-google-fonts = { group = "androidx.compose.ui", name = "ui-text-google-fonts" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 androidx-material3-window-size = { group = "androidx.compose.material3", name = "material3-window-size-class" }
 androidx-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "materialIconsExtended" }
@@ -49,9 +47,6 @@ androidx-camera-core = { group = "androidx.camera", name = "camera-core", versio
 androidx-camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camera" }
 androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camera" }
 androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camera" }
-
-# ML Kit Barcode Scanning
-mlkit-barcode-scanning = { group = "com.google.mlkit", name = "barcode-scanning", version.ref = "mlkitBarcode" }
 
 # ZXing for Barcode generation
 zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }

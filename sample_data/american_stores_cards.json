@@ -1,0 +1,258 @@
+﻿{
+  "version": 1,
+  "exportedAt": 1724845000000,
+  "categories": [
+    {
+      "id": 1,
+      "name": "Supermarkets",
+      "iconName": "supermarket",
+      "colorHex": "#34A853",
+      "orderIndex": 0
+    },
+    {
+      "id": 2,
+      "name": "Clothing & Shoes",
+      "iconName": "clothing",
+      "colorHex": "#8E24AA",
+      "orderIndex": 1
+    },
+    {
+      "id": 3,
+      "name": "Electronics",
+      "iconName": "electronics",
+      "colorHex": "#1A73E8",
+      "orderIndex": 2
+    },
+    {
+      "id": 4,
+      "name": "Pharmacy",
+      "iconName": "pharmacy",
+      "colorHex": "#EA4335",
+      "orderIndex": 3
+    },
+    {
+      "id": 5,
+      "name": "Restaurants & Cafes",
+      "iconName": "restaurant",
+      "colorHex": "#FF6D00",
+      "orderIndex": 4
+    },
+    {
+      "id": 6,
+      "name": "Gas Stations",
+      "iconName": "gas_station",
+      "colorHex": "#FBBC04",
+      "orderIndex": 5
+    }
+  ],
+  "cards": [
+    {
+      "id": 1,
+      "title": "Target Circle",
+      "barcodeValue": "2094857392014",
+      "barcodeFormat": "EAN_13",
+      "categoryId": 1,
+      "colorHex": "#EA4335",
+      "notes": "5% RedCard discount & birthday reward",
+      "isFavorite": true,
+      "useCount": 24,
+      "createdAt": 1724800000000,
+      "lastUsedAt": 1724840000000
+    },
+    {
+      "id": 2,
+      "title": "Costco Wholesale",
+      "barcodeValue": "719482019485",
+      "barcodeFormat": "CODE_128",
+      "categoryId": 1,
+      "colorHex": "#1A73E8",
+      "notes": "Executive Member • 2% Annual Reward",
+      "isFavorite": true,
+      "useCount": 18,
+      "createdAt": 1724801000000,
+      "lastUsedAt": 1724838000000
+    },
+    {
+      "id": 3,
+      "title": "Starbucks Rewards",
+      "barcodeValue": "6084920194857201",
+      "barcodeFormat": "PDF_417",
+      "categoryId": 5,
+      "colorHex": "#00897B",
+      "notes": "Gold Level • Free refill on brewed coffee",
+      "isFavorite": true,
+      "useCount": 32,
+      "createdAt": 1724802000000,
+      "lastUsedAt": 1724844000000
+    },
+    {
+      "id": 4,
+      "title": "Walmart+ Rewards",
+      "barcodeValue": "012345678905",
+      "barcodeFormat": "UPC_A",
+      "categoryId": 1,
+      "colorHex": "#00B4D8",
+      "notes": "Scan & Go fuel discount: 10¢/gal at Exxon & Mobil",
+      "isFavorite": false,
+      "useCount": 12,
+      "createdAt": 1724803000000,
+      "lastUsedAt": 1724830000000
+    },
+    {
+      "id": 5,
+      "title": "Best Buy Totaltech",
+      "barcodeValue": "BB9482019485",
+      "barcodeFormat": "CODE_128",
+      "categoryId": 3,
+      "colorHex": "#FBBC04",
+      "notes": "Member-exclusive pricing & 60-day returns",
+      "isFavorite": false,
+      "useCount": 7,
+      "createdAt": 1724804000000,
+      "lastUsedAt": 1724820000000
+    },
+    {
+      "id": 6,
+      "title": "Trader Joe's Crew",
+      "barcodeValue": "TJ8492019485",
+      "barcodeFormat": "CODE_128",
+      "categoryId": 1,
+      "colorHex": "#FF6D00",
+      "notes": "Favorite seasonal snacks & organic produce",
+      "isFavorite": false,
+      "useCount": 9,
+      "createdAt": 1724805000000,
+      "lastUsedAt": 1724825000000
+    },
+    {
+      "id": 7,
+      "title": "CVS ExtraCare",
+      "barcodeValue": "4920194857201",
+      "barcodeFormat": "EAN_13",
+      "categoryId": 4,
+      "colorHex": "#EA4335",
+      "notes": "$5 ExtraBucks rewards on next purchase",
+      "isFavorite": true,
+      "useCount": 15,
+      "createdAt": 1724806000000,
+      "lastUsedAt": 1724835000000
+    },
+    {
+      "id": 8,
+      "title": "Walgreens myWalgreens",
+      "barcodeValue": "WG9482019485",
+      "barcodeFormat": "CODE_128",
+      "categoryId": 4,
+      "colorHex": "#E91E63",
+      "notes": "1% storewide cash rewards, 5% on brand products",
+      "isFavorite": false,
+      "useCount": 6,
+      "createdAt": 1724807000000,
+      "lastUsedAt": 1724810000000
+    },
+    {
+      "id": 9,
+      "title": "The Home Depot Pro Xtra",
+      "barcodeValue": "HD9482019485",
+      "barcodeFormat": "CODE_128",
+      "categoryId": 1,
+      "colorHex": "#D97706",
+      "notes": "Paint discount & volume savings program",
+      "isFavorite": false,
+      "useCount": 4,
+      "createdAt": 1724808000000,
+      "lastUsedAt": 1724809000000
+    },
+    {
+      "id": 10,
+      "title": "Sephora Beauty Insider",
+      "barcodeValue": "SEPH94820194",
+      "barcodeFormat": "CODE_128",
+      "categoryId": 2,
+      "colorHex": "#212121",
+      "notes": "Rouge Member • Free standard 2-day shipping",
+      "isFavorite": false,
+      "useCount": 8,
+      "createdAt": 1724809000000,
+      "lastUsedAt": 1724822000000
+    },
+    {
+      "id": 11,
+      "title": "Nike Membership",
+      "barcodeValue": "https://nike.com/member/card/8492019485",
+      "barcodeFormat": "QR_CODE",
+      "categoryId": 2,
+      "colorHex": "#212121",
+      "notes": "Member-exclusive sneaker drops & receiptless returns",
+      "isFavorite": true,
+      "useCount": 11,
+      "createdAt": 1724810000000,
+      "lastUsedAt": 1724832000000
+    },
+    {
+      "id": 12,
+      "title": "IKEA Family",
+      "barcodeValue": "948201948572",
+      "barcodeFormat": "CODE_128",
+      "categoryId": 1,
+      "colorHex": "#1A73E8",
+      "notes": "Free hot tea/coffee at restaurant & extra discount",
+      "isFavorite": false,
+      "useCount": 5,
+      "createdAt": 1724811000000,
+      "lastUsedAt": 1724815000000
+    },
+    {
+      "id": 13,
+      "title": "Kroger Plus",
+      "barcodeValue": "071948201948",
+      "barcodeFormat": "UPC_A",
+      "categoryId": 1,
+      "colorHex": "#3949AB",
+      "notes": "Fuel points: 100 pts = 10¢ off per gallon",
+      "isFavorite": false,
+      "useCount": 14,
+      "createdAt": 1724812000000,
+      "lastUsedAt": 1724828000000
+    },
+    {
+      "id": 14,
+      "title": "Shell Fuel Rewards",
+      "barcodeValue": "SHELL8492019",
+      "barcodeFormat": "CODE_128",
+      "categoryId": 6,
+      "colorHex": "#FBBC04",
+      "notes": "Gold Status: save 5¢/gal on every fill-up",
+      "isFavorite": false,
+      "useCount": 10,
+      "createdAt": 1724813000000,
+      "lastUsedAt": 1724827000000
+    },
+    {
+      "id": 15,
+      "title": "Whole Foods (Amazon Prime)",
+      "barcodeValue": "https://amazon.com/prime/wholefoods/84920194",
+      "barcodeFormat": "QR_CODE",
+      "categoryId": 1,
+      "colorHex": "#34A853",
+      "notes": "Extra 10% off yellow-tag sale items",
+      "isFavorite": false,
+      "useCount": 13,
+      "createdAt": 1724814000000,
+      "lastUsedAt": 1724829000000
+    },
+    {
+      "id": 16,
+      "title": "Apple Store Pass",
+      "barcodeValue": "APPLE-PASS-9482019485",
+      "barcodeFormat": "QR_CODE",
+      "categoryId": 3,
+      "colorHex": "#212121",
+      "notes": "Express order pickup & Genius Bar check-in",
+      "isFavorite": false,
+      "useCount": 3,
+      "createdAt": 1724815000000,
+      "lastUsedAt": 1724812000000
+    }
+  ]
+}
