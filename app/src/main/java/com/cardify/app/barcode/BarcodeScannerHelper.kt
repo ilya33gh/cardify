@@ -3,6 +3,7 @@ package com.cardify.app.barcode
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.net.Uri
 import androidx.camera.core.ImageProxy
 import com.cardify.app.data.local.entities.BarcodeFormatEnum
@@ -10,12 +11,11 @@ import com.google.zxing.BarcodeFormat
 import com.google.zxing.BinaryBitmap
 import com.google.zxing.DecodeHintType
 import com.google.zxing.MultiFormatReader
-import com.google.zxing.PlanarYUVLuminanceSource
 import com.google.zxing.RGBLuminanceSource
+import com.google.zxing.common.GlobalHistogramBinarizer
 import com.google.zxing.common.HybridBinarizer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.nio.ByteBuffer
 import java.util.EnumMap
 
 data class ScannedBarcodeResult(
@@ -75,36 +75,15 @@ object BarcodeScannerHelper {
     }
 
     private fun decodeImageProxy(imageProxy: ImageProxy): ScannedBarcodeResult? {
-        val plane = imageProxy.planes.getOrNull(0) ?: return null
-        val buffer: ByteBuffer = plane.buffer
-        val bytes = ByteArray(buffer.remaining())
-        buffer.get(bytes)
-
-        val width = imageProxy.width
-        val height = imageProxy.height
-
-        val source = PlanarYUVLuminanceSource(
-            bytes,
-            plane.rowStride,
-            height,
-            0,
-            0,
-            width,
-            height,
-            false
-        )
-
-        val binaryBitmap = BinaryBitmap(HybridBinarizer(source))
-        val reader = createReader()
-        return try {
-            val zxingResult = reader.decodeWithState(binaryBitmap)
-            val format = BarcodeGenerator.mapFromZXingFormat(zxingResult.barcodeFormat)
-            ScannedBarcodeResult(zxingResult.text, format)
-        } catch (e: Exception) {
-            null
-        } finally {
-            reader.reset()
+        val rotation = imageProxy.imageInfo.rotationDegrees
+        val bitmap = imageProxy.toBitmap()
+        val rotatedBitmap = if (rotation != 0) {
+            val matrix = Matrix().apply { postRotate(rotation.toFloat()) }
+            Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, false)
+        } else {
+            bitmap
         }
+        return decodeBitmapInternal(rotatedBitmap)
     }
 
     suspend fun processUri(context: Context, uri: Uri): ScannedBarcodeResult? = withContext(Dispatchers.IO) {
@@ -123,22 +102,48 @@ object BarcodeScannerHelper {
     }
 
     suspend fun processBitmap(bitmap: Bitmap): ScannedBarcodeResult? = withContext(Dispatchers.Default) {
+        decodeBitmapInternal(bitmap)
+    }
+
+    private fun decodeBitmapInternal(bitmap: Bitmap): ScannedBarcodeResult? {
         val width = bitmap.width
         val height = bitmap.height
         val pixels = IntArray(width * height)
         bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
 
         val source = RGBLuminanceSource(width, height, pixels)
-        val binaryBitmap = BinaryBitmap(HybridBinarizer(source))
         val reader = createReader()
-        return@withContext try {
+
+        // 1. Try HybridBinarizer (Standard)
+        try {
+            val binaryBitmap = BinaryBitmap(HybridBinarizer(source))
             val zxingResult = reader.decodeWithState(binaryBitmap)
             val format = BarcodeGenerator.mapFromZXingFormat(zxingResult.barcodeFormat)
-            ScannedBarcodeResult(zxingResult.text, format)
+            return ScannedBarcodeResult(zxingResult.text, format)
         } catch (e: Exception) {
-            null
-        } finally {
             reader.reset()
         }
+
+        // 2. Try GlobalHistogramBinarizer (Enhanced for 1D barcodes / low contrast)
+        try {
+            val binaryBitmap = BinaryBitmap(GlobalHistogramBinarizer(source))
+            val zxingResult = reader.decodeWithState(binaryBitmap)
+            val format = BarcodeGenerator.mapFromZXingFormat(zxingResult.barcodeFormat)
+            return ScannedBarcodeResult(zxingResult.text, format)
+        } catch (e: Exception) {
+            reader.reset()
+        }
+
+        // 3. Try Inverted (for white-on-black barcodes)
+        try {
+            val binaryBitmap = BinaryBitmap(HybridBinarizer(source.invert()))
+            val zxingResult = reader.decodeWithState(binaryBitmap)
+            val format = BarcodeGenerator.mapFromZXingFormat(zxingResult.barcodeFormat)
+            return ScannedBarcodeResult(zxingResult.text, format)
+        } catch (e: Exception) {
+            reader.reset()
+        }
+
+        return null
     }
 }
