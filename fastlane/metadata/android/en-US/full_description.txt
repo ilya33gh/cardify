@@ -1,0 +1,12 @@
+﻿Cardify is a modern, private, and 100% offline loyalty and discount card wallet for Android.
+
+Digitize and organize all your loyalty cards, store passes, and discount memberships in one place with zero ads, zero analytics, and zero internet permission.
+
+Features:
+• 100% Offline & Private: No internet permission, no accounts, and no data tracking.
+• Fullscreen POS Barcode Scanner View: Automatically maximizes screen brightness for fast checkout scanning.
+• Fast Camera Scanner: Easily scan barcodes and QR codes from cards or gallery images.
+• Dynamic Material You Theming: Expressive Material 3 design with light, dark, and OLED modes.
+• Flexible Organization: Categorize cards with custom colors, notes, favorites, and search.
+• Biometric Security & App Lock: Protect your cards with fingerprint, face unlock, or PIN code with customizable auto-lock timeout.
+• Local Backup & Restore: Export and import your encrypted card database via JSON.

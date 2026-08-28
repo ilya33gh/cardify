@@ -1,0 +1,6 @@
+﻿Cardify v1.0.0-beta.4:
+- Redesigned Sort and Layout BottomSheet
+- Format-specific barcode validity verification with error warning haptics
+- Alphabetical collation with Latin and Cyrillic grouping
+- Most used frequency sorting fix
+- 100% offline, zero trackers
