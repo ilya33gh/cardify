@@ -78,10 +78,7 @@ dependencies {
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
 
-    // ML Kit Barcode
-    implementation(libs.mlkit.barcode.scanning)
-
-    // ZXing Barcode Generator
+    // ZXing Barcode Scanning & Generator (100% FOSS)
     implementation(libs.zxing.core)
 
     // Gson for JSON Export/Import

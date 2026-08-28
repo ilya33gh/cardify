@@ -2,18 +2,21 @@ package com.cardify.app.barcode
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
-import androidx.annotation.OptIn
-import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageProxy
 import com.cardify.app.data.local.entities.BarcodeFormatEnum
-import com.google.mlkit.vision.barcode.BarcodeScanner
-import com.google.mlkit.vision.barcode.BarcodeScannerOptions
-import com.google.mlkit.vision.barcode.BarcodeScanning
-import com.google.mlkit.vision.barcode.common.Barcode
-import com.google.mlkit.vision.common.InputImage
-import kotlin.coroutines.resume
-import kotlinx.coroutines.suspendCancellableCoroutine
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.BinaryBitmap
+import com.google.zxing.DecodeHintType
+import com.google.zxing.MultiFormatReader
+import com.google.zxing.PlanarYUVLuminanceSource
+import com.google.zxing.RGBLuminanceSource
+import com.google.zxing.common.HybridBinarizer
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.nio.ByteBuffer
+import java.util.EnumMap
 
 data class ScannedBarcodeResult(
     val rawValue: String,
@@ -22,116 +25,120 @@ data class ScannedBarcodeResult(
 
 object BarcodeScannerHelper {
 
-    private val allFormatsOptions = BarcodeScannerOptions.Builder()
-        .setBarcodeFormats(Barcode.FORMAT_ALL_FORMATS)
-        .build()
+    private val supportedFormats = listOf(
+        BarcodeFormat.EAN_13,
+        BarcodeFormat.EAN_8,
+        BarcodeFormat.UPC_A,
+        BarcodeFormat.UPC_E,
+        BarcodeFormat.CODE_128,
+        BarcodeFormat.CODE_39,
+        BarcodeFormat.CODE_93,
+        BarcodeFormat.CODABAR,
+        BarcodeFormat.ITF,
+        BarcodeFormat.QR_CODE,
+        BarcodeFormat.DATA_MATRIX,
+        BarcodeFormat.AZTEC,
+        BarcodeFormat.PDF_417
+    )
 
-    fun getScanner(): BarcodeScanner {
-        return BarcodeScanning.getClient(allFormatsOptions)
+    private fun createReader(): MultiFormatReader {
+        val hints = EnumMap<DecodeHintType, Any>(DecodeHintType::class.java).apply {
+            put(DecodeHintType.TRY_HARDER, true)
+            put(DecodeHintType.POSSIBLE_FORMATS, supportedFormats)
+            put(DecodeHintType.CHARACTER_SET, "UTF-8")
+        }
+        return MultiFormatReader().apply { setHints(hints) }
     }
 
-    @OptIn(ExperimentalGetImage::class)
     fun processImageProxyAsync(
         imageProxy: ImageProxy,
         onResult: (ScannedBarcodeResult?) -> Unit
     ) {
-        val mediaImage = imageProxy.image
-        if (mediaImage == null) {
-            imageProxy.close()
-            onResult(null)
-            return
-        }
-        val inputImage = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-        getScanner().process(inputImage)
-            .addOnSuccessListener { barcodes ->
-                val first = barcodes.firstOrNull { !it.rawValue.isNullOrBlank() }
-                if (first?.rawValue != null) {
-                    val format = BarcodeGenerator.mapFromMLKitFormat(first.format)
-                    onResult(ScannedBarcodeResult(first.rawValue!!, format))
-                } else {
-                    onResult(null)
-                }
-            }
-            .addOnFailureListener {
-                onResult(null)
-            }
-            .addOnCompleteListener {
-                imageProxy.close()
-            }
-    }
-
-    @OptIn(ExperimentalGetImage::class)
-    suspend fun processImageProxy(imageProxy: ImageProxy): ScannedBarcodeResult? {
-        val mediaImage = imageProxy.image ?: run {
-            imageProxy.close()
-            return null
-        }
-        val inputImage = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-        val scanner = getScanner()
-
-        return suspendCancellableCoroutine { continuation ->
-            scanner.process(inputImage)
-                .addOnSuccessListener { barcodes ->
-                    val first = barcodes.firstOrNull { !it.rawValue.isNullOrBlank() }
-                    if (first?.rawValue != null) {
-                        val format = BarcodeGenerator.mapFromMLKitFormat(first.format)
-                        continuation.resume(ScannedBarcodeResult(first.rawValue!!, format))
-                    } else {
-                        continuation.resume(null)
-                    }
-                }
-                .addOnFailureListener {
-                    continuation.resume(null)
-                }
-                .addOnCompleteListener {
-                    imageProxy.close()
-                }
-        }
-    }
-
-    suspend fun processUri(context: Context, uri: Uri): ScannedBarcodeResult? {
-        val inputImage = try {
-            InputImage.fromFilePath(context, uri)
+        try {
+            val result = decodeImageProxy(imageProxy)
+            onResult(result)
         } catch (e: Exception) {
-            return null
-        }
-        val scanner = getScanner()
-
-        return suspendCancellableCoroutine { continuation ->
-            scanner.process(inputImage)
-                .addOnSuccessListener { barcodes ->
-                    val first = barcodes.firstOrNull { !it.rawValue.isNullOrBlank() }
-                    if (first?.rawValue != null) {
-                        val format = BarcodeGenerator.mapFromMLKitFormat(first.format)
-                        continuation.resume(ScannedBarcodeResult(first.rawValue!!, format))
-                    } else {
-                        continuation.resume(null)
-                    }
-                }
-                .addOnFailureListener {
-                    continuation.resume(null)
-                }
+            onResult(null)
+        } finally {
+            imageProxy.close()
         }
     }
 
-    suspend fun processBitmap(bitmap: Bitmap): ScannedBarcodeResult? {
-        val inputImage = InputImage.fromBitmap(bitmap, 0)
-        val scanner = getScanner()
+    suspend fun processImageProxy(imageProxy: ImageProxy): ScannedBarcodeResult? = withContext(Dispatchers.Default) {
+        try {
+            decodeImageProxy(imageProxy)
+        } catch (e: Exception) {
+            null
+        } finally {
+            imageProxy.close()
+        }
+    }
 
-        return suspendCancellableCoroutine { continuation ->
-            scanner.process(inputImage)
-                .addOnSuccessListener { barcodes ->
-                    val first = barcodes.firstOrNull { !it.rawValue.isNullOrBlank() }
-                    if (first?.rawValue != null) {
-                        val format = BarcodeGenerator.mapFromMLKitFormat(first.format)
-                        continuation.resume(ScannedBarcodeResult(first.rawValue!!, format))
-                    } else {
-                        continuation.resume(null)
-                    }
-                }
-                .addOnFailureListener {
-                    continuation.resume(null)
-                }
+    private fun decodeImageProxy(imageProxy: ImageProxy): ScannedBarcodeResult? {
+        val plane = imageProxy.planes.getOrNull(0) ?: return null
+        val buffer: ByteBuffer = plane.buffer
+        val bytes = ByteArray(buffer.remaining())
+        buffer.get(bytes)
+
+        val width = imageProxy.width
+        val height = imageProxy.height
+
+        val source = PlanarYUVLuminanceSource(
+            bytes,
+            plane.rowStride,
+            height,
+            0,
+            0,
+            width,
+            height,
+            false
+        )
+
+        val binaryBitmap = BinaryBitmap(HybridBinarizer(source))
+        val reader = createReader()
+        return try {
+            val zxingResult = reader.decodeWithState(binaryBitmap)
+            val format = BarcodeGenerator.mapFromZXingFormat(zxingResult.barcodeFormat)
+            ScannedBarcodeResult(zxingResult.text, format)
+        } catch (e: Exception) {
+            null
+        } finally {
+            reader.reset()
+        }
+    }
+
+    suspend fun processUri(context: Context, uri: Uri): ScannedBarcodeResult? = withContext(Dispatchers.IO) {
+        try {
+            val inputStream = context.contentResolver.openInputStream(uri) ?: return@withContext null
+            val bitmap = BitmapFactory.decodeStream(inputStream)
+            inputStream.close()
+            if (bitmap != null) {
+                processBitmap(bitmap)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun processBitmap(bitmap: Bitmap): ScannedBarcodeResult? = withContext(Dispatchers.Default) {
+        val width = bitmap.width
+        val height = bitmap.height
+        val pixels = IntArray(width * height)
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+
+        val source = RGBLuminanceSource(width, height, pixels)
+        val binaryBitmap = BinaryBitmap(HybridBinarizer(source))
+        val reader = createReader()
+        return@withContext try {
+            val zxingResult = reader.decodeWithState(binaryBitmap)
+            val format = BarcodeGenerator.mapFromZXingFormat(zxingResult.barcodeFormat)
+            ScannedBarcodeResult(zxingResult.text, format)
+        } catch (e: Exception) {
+            null
+        } finally {
+            reader.reset()
         }
     }
 }

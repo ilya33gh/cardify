@@ -109,21 +109,21 @@ object BarcodeGenerator {
         }
     }
 
-    fun mapFromMLKitFormat(mlKitFormat: Int): BarcodeFormatEnum {
-        return when (mlKitFormat) {
-            com.google.mlkit.vision.barcode.common.Barcode.FORMAT_EAN_13 -> BarcodeFormatEnum.EAN_13
-            com.google.mlkit.vision.barcode.common.Barcode.FORMAT_EAN_8 -> BarcodeFormatEnum.EAN_8
-            com.google.mlkit.vision.barcode.common.Barcode.FORMAT_CODE_128 -> BarcodeFormatEnum.CODE_128
-            com.google.mlkit.vision.barcode.common.Barcode.FORMAT_CODE_39 -> BarcodeFormatEnum.CODE_39
-            com.google.mlkit.vision.barcode.common.Barcode.FORMAT_CODE_93 -> BarcodeFormatEnum.CODE_93
-            com.google.mlkit.vision.barcode.common.Barcode.FORMAT_UPC_A -> BarcodeFormatEnum.UPC_A
-            com.google.mlkit.vision.barcode.common.Barcode.FORMAT_UPC_E -> BarcodeFormatEnum.UPC_E
-            com.google.mlkit.vision.barcode.common.Barcode.FORMAT_CODABAR -> BarcodeFormatEnum.CODABAR
-            com.google.mlkit.vision.barcode.common.Barcode.FORMAT_ITF -> BarcodeFormatEnum.ITF
-            com.google.mlkit.vision.barcode.common.Barcode.FORMAT_QR_CODE -> BarcodeFormatEnum.QR_CODE
-            com.google.mlkit.vision.barcode.common.Barcode.FORMAT_DATA_MATRIX -> BarcodeFormatEnum.DATA_MATRIX
-            com.google.mlkit.vision.barcode.common.Barcode.FORMAT_AZTEC -> BarcodeFormatEnum.AZTEC
-            com.google.mlkit.vision.barcode.common.Barcode.FORMAT_PDF417 -> BarcodeFormatEnum.PDF_417
+    fun mapFromZXingFormat(zxingFormat: BarcodeFormat): BarcodeFormatEnum {
+        return when (zxingFormat) {
+            BarcodeFormat.EAN_13 -> BarcodeFormatEnum.EAN_13
+            BarcodeFormat.EAN_8 -> BarcodeFormatEnum.EAN_8
+            BarcodeFormat.CODE_128 -> BarcodeFormatEnum.CODE_128
+            BarcodeFormat.CODE_39 -> BarcodeFormatEnum.CODE_39
+            BarcodeFormat.CODE_93 -> BarcodeFormatEnum.CODE_93
+            BarcodeFormat.UPC_A -> BarcodeFormatEnum.UPC_A
+            BarcodeFormat.UPC_E -> BarcodeFormatEnum.UPC_E
+            BarcodeFormat.CODABAR -> BarcodeFormatEnum.CODABAR
+            BarcodeFormat.ITF -> BarcodeFormatEnum.ITF
+            BarcodeFormat.QR_CODE -> BarcodeFormatEnum.QR_CODE
+            BarcodeFormat.DATA_MATRIX -> BarcodeFormatEnum.DATA_MATRIX
+            BarcodeFormat.AZTEC -> BarcodeFormatEnum.AZTEC
+            BarcodeFormat.PDF_417 -> BarcodeFormatEnum.PDF_417
             else -> BarcodeFormatEnum.CODE_128
         }
     }
