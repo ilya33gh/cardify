@@ -3,8 +3,8 @@ package com.cardify.app.ui.security
 import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Fingerprint
-import androidx.compose.material.icons.outlined.Security
+import androidx.compose.material.icons.rounded.Fingerprint
+import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -65,7 +65,7 @@ fun BiometricAuthLockScreen(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = Icons.Outlined.Security,
+                            imageVector = Icons.Rounded.Security,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.size(48.dp)
@@ -116,7 +116,7 @@ fun BiometricAuthLockScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
                     Icon(
-                        imageVector = Icons.Outlined.Fingerprint,
+                        imageVector = Icons.Rounded.Fingerprint,
                         contentDescription = null,
                         modifier = Modifier.size(24.dp)
                     )

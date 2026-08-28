@@ -12,11 +12,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Notes
-import androidx.compose.material.icons.outlined.ContentCopy
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.automirrored.rounded.Notes
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -65,18 +65,12 @@ fun CardDetailSheet(
 
     val baseCardColor = CardColorPalette.getHarmonizedColor(card.colorHex)
 
-    val surfaceContainerColor = MaterialTheme.colorScheme.surfaceContainerLow
     val isOled = MaterialTheme.colorScheme.surface == Color.Black
 
-    // Dynamic Muted Bottom Sheet Background matching Card Color & System Theme
-    val sheetContainerColor = remember(baseCardColor, surfaceContainerColor, isDark, isOled) {
-        if (isOled) {
-            Color(ColorUtils.blendARGB(baseCardColor.toArgb(), android.graphics.Color.BLACK, 0.94f))
-        } else {
-            val targetArgb = surfaceContainerColor.toArgb()
-            val blendFraction = if (isDark) 0.88f else 0.92f
-            Color(ColorUtils.blendARGB(baseCardColor.toArgb(), targetArgb, blendFraction))
-        }
+    val bottomSheetContainerColor = when {
+        isOled -> Color.Black
+        isDark -> MaterialTheme.colorScheme.surfaceContainerLow
+        else -> MaterialTheme.colorScheme.surfaceContainerHigh
     }
 
     val windowSizeInfo = MaterialThemeAdaptive
@@ -85,7 +79,7 @@ fun CardDetailSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         shape = BottomSheetTopShape,
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = bottomSheetContainerColor,
         contentColor = MaterialTheme.colorScheme.onSurface,
         dragHandle = {
             BottomSheetDefaults.DragHandle(
@@ -144,10 +138,10 @@ fun CardDetailSheet(
                 Text(
                     text = card.title,
                     style = MaterialTheme.typography.displaySmall.copy(
-                        fontFamily = ManropeFamily,
-                        fontWeight = FontWeight.Black,
-                        fontSize = 28.sp,
-                        lineHeight = 32.sp
+                        fontFamily = GoogleSansFlexCardTitle,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 26.sp,
+                        lineHeight = 30.sp
                     ),
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
@@ -192,7 +186,7 @@ fun CardDetailSheet(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Outlined.Notes,
+                                imageVector = Icons.AutoMirrored.Rounded.Notes,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(18.dp)
@@ -201,7 +195,7 @@ fun CardDetailSheet(
                                 text = stringResource(R.string.note_label),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Black,
+                                fontWeight = FontWeight.Bold,
                                 maxLines = 1,
                                 softWrap = false
                             )
@@ -209,7 +203,10 @@ fun CardDetailSheet(
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = card.notes,
-                            style = MaterialTheme.typography.bodyLarge,
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontFamily = GoogleSansFlexSlantedNote,
+                                fontSize = 15.sp
+                            ),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -261,7 +258,7 @@ fun CardDetailSheet(
                             modifier = Modifier.size(56.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.ContentCopy,
+                                imageVector = Icons.Rounded.ContentCopy,
                                 contentDescription = stringResource(R.string.copy_action),
                                 tint = MaterialTheme.colorScheme.onSecondaryContainer,
                                 modifier = Modifier.size(26.dp)
@@ -282,7 +279,7 @@ fun CardDetailSheet(
                             modifier = Modifier.size(56.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.Share,
+                                imageVector = Icons.Rounded.Share,
                                 contentDescription = stringResource(R.string.share_action),
                                 tint = MaterialTheme.colorScheme.onSecondaryContainer,
                                 modifier = Modifier.size(26.dp)
@@ -298,7 +295,7 @@ fun CardDetailSheet(
                             modifier = Modifier.size(56.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.Edit,
+                                imageVector = Icons.Rounded.Edit,
                                 contentDescription = stringResource(R.string.edit_action),
                                 tint = MaterialTheme.colorScheme.onSecondaryContainer,
                                 modifier = Modifier.size(26.dp)
@@ -326,7 +323,7 @@ fun CardDetailSheet(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Outlined.Delete,
+                            imageVector = Icons.Rounded.Delete,
                             contentDescription = stringResource(R.string.delete_action),
                             tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(26.dp)

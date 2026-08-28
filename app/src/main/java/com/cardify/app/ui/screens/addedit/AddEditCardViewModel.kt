@@ -21,9 +21,12 @@ data class AddEditCardUiState(
     val selectedColorHex: String = CardColorPalette.options.first().primaryHex,
     val notes: String = "",
     val isFavorite: Boolean = false,
+    val useCount: Int = 0,
+    val createdAt: Long = System.currentTimeMillis(),
     val categories: List<CardCategory> = emptyList(),
     val isSaved: Boolean = false,
     val errorMessage: String? = null,
+    val errorTimestamp: Long = 0L,
     val isLoading: Boolean = false
 )
 
@@ -42,20 +45,22 @@ class AddEditCardViewModel(
         )
     )
 
-    // Pre-warm category list eagerly with form state to prevent mid-transition recomposition
     val uiState: StateFlow<AddEditCardUiState> = combine(
         _formState,
         categoryRepository.getAllCategories()
-    ) { form, cats ->
-        form.copy(categories = cats)
+    ) { form, categories ->
+        form.copy(categories = categories)
     }.stateIn(
         scope = viewModelScope,
-        started = SharingStarted.Eagerly,
-        initialValue = _formState.value
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = AddEditCardUiState(isLoading = true)
     )
 
     init {
-        // Load existing card if editing
+        loadCard()
+    }
+
+    private fun loadCard() {
         if (initialCardId != null && initialCardId > 0) {
             viewModelScope.launch {
                 _formState.update { it.copy(isLoading = true) }
@@ -70,6 +75,8 @@ class AddEditCardViewModel(
                             selectedColorHex = card.colorHex,
                             notes = card.notes,
                             isFavorite = card.isFavorite,
+                            useCount = card.useCount,
+                            createdAt = card.createdAt,
                             isLoading = false
                         )
                     }
@@ -80,7 +87,7 @@ class AddEditCardViewModel(
 
     fun onTitleChanged(value: String) = _formState.update { it.copy(title = value, errorMessage = null) }
     fun onBarcodeValueChanged(value: String) = _formState.update { it.copy(barcodeValue = value, errorMessage = null) }
-    fun onBarcodeFormatChanged(format: BarcodeFormatEnum) = _formState.update { it.copy(barcodeFormat = format) }
+    fun onBarcodeFormatChanged(format: BarcodeFormatEnum) = _formState.update { it.copy(barcodeFormat = format, errorMessage = null) }
     fun onCategorySelected(categoryId: Long?) = _formState.update { it.copy(selectedCategoryId = categoryId) }
     fun onColorSelected(hex: String) = _formState.update { it.copy(selectedColorHex = hex) }
     fun onNotesChanged(notes: String) = _formState.update { it.copy(notes = notes) }
@@ -89,11 +96,36 @@ class AddEditCardViewModel(
     fun saveCard() {
         val currentState = uiState.value
         if (currentState.title.isBlank()) {
-            _formState.update { it.copy(errorMessage = "Введите название карты или магазина") }
+            _formState.update {
+                it.copy(
+                    errorMessage = "Введите название карты или магазина",
+                    errorTimestamp = System.currentTimeMillis()
+                )
+            }
             return
         }
         if (currentState.barcodeValue.isBlank()) {
-            _formState.update { it.copy(errorMessage = "Введите номер или код карты") }
+            _formState.update {
+                it.copy(
+                    errorMessage = "Введите номер карты или штрихкод",
+                    errorTimestamp = System.currentTimeMillis()
+                )
+            }
+            return
+        }
+
+        // Validate barcode format validity
+        val validationError = com.cardify.app.barcode.BarcodeGenerator.validateBarcode(
+            currentState.barcodeValue,
+            currentState.barcodeFormat
+        )
+        if (validationError != null) {
+            _formState.update {
+                it.copy(
+                    errorMessage = validationError,
+                    errorTimestamp = System.currentTimeMillis()
+                )
+            }
             return
         }
 
@@ -107,6 +139,8 @@ class AddEditCardViewModel(
                 colorHex = currentState.selectedColorHex,
                 notes = currentState.notes.trim(),
                 isFavorite = currentState.isFavorite,
+                useCount = currentState.useCount,
+                createdAt = currentState.createdAt,
                 lastUsedAt = System.currentTimeMillis()
             )
 
@@ -115,6 +149,8 @@ class AddEditCardViewModel(
             } else {
                 cardRepository.saveCard(card)
             }
+
+            com.cardify.app.barcode.BarcodeGenerator.preloadBarcode(card.barcodeValue, card.barcodeFormat)
 
             _formState.update { it.copy(isSaved = true) }
         }

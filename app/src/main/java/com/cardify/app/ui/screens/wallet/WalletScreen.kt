@@ -39,9 +39,9 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
+import com.cardify.app.ui.theme.GoogleSansFlexSlantedCount
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -73,6 +73,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
+import com.cardify.app.ui.theme.GoogleSansFlexBrand
+import com.cardify.app.ui.theme.GoogleSansFlexFamily
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
@@ -87,6 +89,7 @@ import com.cardify.app.domain.model.LoyaltyCard
 import com.cardify.app.ui.components.*
 import com.cardify.app.ui.components.rememberHapticHelper
 import com.cardify.app.ui.screens.carddetail.CardDetailSheet
+import com.cardify.app.ui.screens.search.SearchScreen
 import com.cardify.app.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -100,12 +103,9 @@ fun WalletScreen(
     onNavigateToSettings: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var isSearchExpanded by remember { mutableStateOf(false) }
+    var currentNavTab by rememberSaveable { mutableIntStateOf(0) }
 
-    var showSortMenu by remember { mutableStateOf(false) }
-    var showLayoutMenu by remember { mutableStateOf(false) }
-    var activeCardMenuId by remember { mutableStateOf<Long?>(null) }
-    var pressOffset by remember { mutableStateOf(Offset.Zero) }
+    var showSortBottomSheet by remember { mutableStateOf(false) }
     var cardToDelete by remember { mutableStateOf<LoyaltyCard?>(null) }
 
     val hapticHelper = rememberHapticHelper()
@@ -123,63 +123,12 @@ fun WalletScreen(
         }
     }
 
-    val focusRequester = remember { FocusRequester() }
-    val keyboardController = LocalSoftwareKeyboardController.current
-    val focusManager = LocalFocusManager.current
-
-    val isSearchActive = isSearchExpanded || uiState.searchQuery.isNotEmpty()
-
-    // System Back Gesture: Close search bar & clear keyboard/focus when search is active
-    BackHandler(enabled = isSearchActive) {
-        isSearchExpanded = false
-        viewModel.onSearchQueryChanged("")
-        focusManager.clearFocus()
-        keyboardController?.hide()
+    // System Back Gesture: When in Search tab, return to Cards tab
+    BackHandler(enabled = currentNavTab == 1) {
+        currentNavTab = 0
     }
-
-    // Smooth rotating animation and color transition for search trigger button
-    val searchButtonRotation by animateFloatAsState(
-        targetValue = if (isSearchActive) 180f else 0f,
-        animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
-        label = "searchButtonRotation"
-    )
 
     val isDark = isSystemInDarkTheme()
-
-    val searchButtonContainerColor by animateColorAsState(
-        targetValue = if (isSearchActive)
-            MaterialTheme.colorScheme.primary
-        else
-            MaterialTheme.colorScheme.surfaceContainerHighest,
-        animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
-        label = "searchButtonContainerColor"
-    )
-
-    val searchButtonContentColor by animateColorAsState(
-        targetValue = if (isSearchActive)
-            MaterialTheme.colorScheme.onPrimary
-        else
-            MaterialTheme.colorScheme.onSurface,
-        animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
-        label = "searchButtonContentColor"
-    )
-
-    // Auto-focus and open keyboard when search is opened
-    LaunchedEffect(isSearchExpanded) {
-        if (isSearchExpanded) {
-            focusRequester.requestFocus()
-            keyboardController?.show()
-        } else {
-            focusManager.clearFocus()
-            keyboardController?.hide()
-        }
-    }
-
-    val isFilterActive = uiState.allCardsCount > 0 && (
-            uiState.searchQuery.isNotBlank() ||
-                    uiState.selectedCategoryId != null ||
-                    uiState.onlyFavorites
-            )
 
     // Categories list for Pager Page mapping
     val categoriesList = remember(uiState.categories) { uiState.categories }
@@ -231,14 +180,14 @@ fun WalletScreen(
     val maxCollapseDp = if (windowSizeInfo.heightType == WindowType.COMPACT || windowSizeInfo.isLandscape) 60.dp else 92.dp
     val maxCollapsePx = with(density) { maxCollapseDp.toPx() }
 
-    var headerCollapseOffsetPx by remember { mutableFloatStateOf(0f) }
-    val settleAnim = remember { Animatable(0f) }
+    var headerCollapseOffsetPx by remember(maxCollapsePx) { mutableFloatStateOf(-maxCollapsePx) }
+    val settleAnim = remember { Animatable(-maxCollapsePx) }
 
     val expandFraction by remember {
         derivedStateOf {
             if (maxCollapsePx > 0f) {
                 (1f - (-headerCollapseOffsetPx / maxCollapsePx)).coerceIn(0f, 1f)
-            } else 1f
+            } else 0f
         }
     }
 
@@ -261,7 +210,7 @@ fun WalletScreen(
                 source: NestedScrollSource
             ): Offset {
                 val delta = available.y
-                if (delta > 0f && source == NestedScrollSource.UserInput && headerCollapseOffsetPx < 0f) {
+                if (delta > 0f && headerCollapseOffsetPx < 0f) {
                     val prev = headerCollapseOffsetPx
                     headerCollapseOffsetPx = (headerCollapseOffsetPx + delta).coerceIn(-maxCollapsePx, 0f)
                     return Offset(0f, headerCollapseOffsetPx - prev)
@@ -272,49 +221,51 @@ fun WalletScreen(
             // Smooth 120 FPS Momentum Deceleration & Spring Settle (Standard Android fling)
             override suspend fun onPreFling(available: Velocity): Velocity {
                 val vy = available.y
-                if (vy < -250f && headerCollapseOffsetPx > -maxCollapsePx) {
-                    settleAnim.snapTo(headerCollapseOffsetPx)
-                    settleAnim.animateTo(
-                        targetValue = -maxCollapsePx,
-                        initialVelocity = vy,
-                        animationSpec = spring(
-                            dampingRatio = 0.88f,
-                            stiffness = 380f
-                        )
-                    ) {
-                        headerCollapseOffsetPx = value
+                if (vy < -150f && headerCollapseOffsetPx > -maxCollapsePx) {
+                    coroutineScope.launch {
+                        settleAnim.snapTo(headerCollapseOffsetPx)
+                        settleAnim.animateTo(
+                            targetValue = -maxCollapsePx,
+                            animationSpec = spring(
+                                dampingRatio = 0.9f,
+                                stiffness = 420f
+                            )
+                        ) {
+                            headerCollapseOffsetPx = value
+                        }
                     }
-                    return Velocity.Zero
                 }
                 return super.onPreFling(available)
             }
 
             override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
                 val vy = available.y
-                if (vy > 250f && headerCollapseOffsetPx < 0f) {
-                    settleAnim.snapTo(headerCollapseOffsetPx)
-                    settleAnim.animateTo(
-                        targetValue = 0f,
-                        initialVelocity = vy,
-                        animationSpec = spring(
-                            dampingRatio = 0.88f,
-                            stiffness = 380f
-                        )
-                    ) {
-                        headerCollapseOffsetPx = value
+                if (vy > 150f && headerCollapseOffsetPx < 0f) {
+                    coroutineScope.launch {
+                        settleAnim.snapTo(headerCollapseOffsetPx)
+                        settleAnim.animateTo(
+                            targetValue = 0f,
+                            animationSpec = spring(
+                                dampingRatio = 0.9f,
+                                stiffness = 420f
+                            )
+                        ) {
+                            headerCollapseOffsetPx = value
+                        }
                     }
-                    return Velocity.Zero
                 } else if (headerCollapseOffsetPx < 0f && headerCollapseOffsetPx > -maxCollapsePx) {
                     val target = if (headerCollapseOffsetPx > -maxCollapsePx * 0.5f) 0f else -maxCollapsePx
-                    settleAnim.snapTo(headerCollapseOffsetPx)
-                    settleAnim.animateTo(
-                        targetValue = target,
-                        animationSpec = spring(
-                            dampingRatio = 0.88f,
-                            stiffness = 380f
-                        )
-                    ) {
-                        headerCollapseOffsetPx = value
+                    coroutineScope.launch {
+                        settleAnim.snapTo(headerCollapseOffsetPx)
+                        settleAnim.animateTo(
+                            targetValue = target,
+                            animationSpec = spring(
+                                dampingRatio = 0.9f,
+                                stiffness = 420f
+                            )
+                        ) {
+                            headerCollapseOffsetPx = value
+                        }
                     }
                 }
                 return super.onPostFling(consumed, available)
@@ -326,17 +277,6 @@ fun WalletScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surfaceContainer)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) {
-                if (isSearchActive) {
-                    isSearchExpanded = false
-                    viewModel.onSearchQueryChanged("")
-                    focusManager.clearFocus()
-                    keyboardController?.hide()
-                }
-            }
     ) {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -425,8 +365,8 @@ fun WalletScreen(
                             Text(
                                 text = "cardify",
                                 style = MaterialTheme.typography.displayMedium.copy(
-                                    fontFamily = ManropeFamily,
-                                    fontWeight = FontWeight.Black,
+                                    fontFamily = GoogleSansFlexBrand,
+                                    fontWeight = FontWeight(650),
                                     fontSize = 24.sp,
                                     letterSpacing = (-0.5).sp
                                 ),
@@ -436,7 +376,7 @@ fun WalletScreen(
                             )
                         }
 
-                        // Top-Right Action Buttons (Search & Settings)
+                        // Top-Right Action Button (Settings)
                         Row(
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
@@ -444,34 +384,6 @@ fun WalletScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = searchButtonContainerColor,
-                                border = null,
-                                tonalElevation = 0.dp,
-                                shadowElevation = 0.dp,
-                                modifier = Modifier.size(42.dp)
-                            ) {
-                                IconButton(onClick = {
-                                    triggerHaptic()
-                                    isSearchExpanded = !isSearchExpanded
-                                }) {
-                                    Crossfade(
-                                        targetState = isSearchActive,
-                                        animationSpec = tween(180),
-                                        modifier = Modifier.rotate(searchButtonRotation),
-                                        label = "searchIconCrossfade"
-                                    ) { active ->
-                                        Icon(
-                                            imageVector = if (active) Icons.Default.Close else Icons.Outlined.Search,
-                                            contentDescription = "Search",
-                                            tint = searchButtonContentColor,
-                                            modifier = Modifier.size(22.dp)
-                                        )
-                                    }
-                                }
-                            }
-
                             Surface(
                                 shape = CircleShape,
                                 color = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -485,7 +397,7 @@ fun WalletScreen(
                                     onNavigateToSettings()
                                 }) {
                                     Icon(
-                                        imageVector = Icons.Outlined.Settings,
+                                        imageVector = Icons.Rounded.Settings,
                                         contentDescription = stringResource(R.string.settings_title),
                                         tint = MaterialTheme.colorScheme.onSurface,
                                         modifier = Modifier.size(22.dp)
@@ -502,14 +414,14 @@ fun WalletScreen(
                     tonalElevation = 0.dp
                 ) {
                     NavigationBarItem(
-                        selected = !uiState.onlyFavorites,
+                        selected = currentNavTab == 0,
                         onClick = {
                             triggerHaptic()
-                            viewModel.onToggleOnlyFavorites(false)
+                            currentNavTab = 0
                         },
                         icon = {
                             Icon(
-                                imageVector = if (!uiState.onlyFavorites) Icons.Filled.AccountBalanceWallet else Icons.Outlined.AccountBalanceWallet,
+                                imageVector = Icons.Rounded.AccountBalanceWallet,
                                 contentDescription = stringResource(R.string.all_cards_tab)
                             )
                         },
@@ -518,7 +430,7 @@ fun WalletScreen(
                                 text = stringResource(R.string.all_cards_tab),
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     fontFamily = InterFamily,
-                                    fontWeight = if (!uiState.onlyFavorites) FontWeight.Bold else FontWeight.Medium
+                                    fontWeight = if (currentNavTab == 0) FontWeight.Bold else FontWeight.Medium
                                 )
                             )
                         },
@@ -532,23 +444,23 @@ fun WalletScreen(
                     )
 
                     NavigationBarItem(
-                        selected = uiState.onlyFavorites,
+                        selected = currentNavTab == 1,
                         onClick = {
                             triggerHaptic()
-                            viewModel.onToggleOnlyFavorites(true)
+                            currentNavTab = 1
                         },
                         icon = {
                             Icon(
-                                imageVector = if (uiState.onlyFavorites) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                                contentDescription = stringResource(R.string.favorites_tab)
+                                imageVector = Icons.Rounded.Search,
+                                contentDescription = stringResource(R.string.search_tab)
                             )
                         },
                         label = {
                             Text(
-                                text = stringResource(R.string.favorites_tab),
+                                text = stringResource(R.string.search_tab),
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     fontFamily = InterFamily,
-                                    fontWeight = if (uiState.onlyFavorites) FontWeight.Bold else FontWeight.Medium
+                                    fontWeight = if (currentNavTab == 1) FontWeight.Bold else FontWeight.Medium
                                 )
                             )
                         },
@@ -563,760 +475,301 @@ fun WalletScreen(
                 }
             }
         ) { paddingValues ->
-            Box(
+            AnimatedContent(
+                targetState = currentNavTab,
+                transitionSpec = {
+                    val slideDuration = 340
+                    val easing = FastOutSlowInEasing
+                    if (targetState == 1) {
+                        (slideInHorizontally(animationSpec = tween(slideDuration, easing = easing)) { width -> width } +
+                                fadeIn(animationSpec = tween(slideDuration, easing = easing))) togetherWith
+                                (slideOutHorizontally(animationSpec = tween(slideDuration, easing = easing)) { width -> -width / 3 } +
+                                        fadeOut(animationSpec = tween(slideDuration - 60, easing = easing)))
+                    } else {
+                        (slideInHorizontally(animationSpec = tween(slideDuration, easing = easing)) { width -> -width } +
+                                fadeIn(animationSpec = tween(slideDuration, easing = easing))) togetherWith
+                                (slideOutHorizontally(animationSpec = tween(slideDuration, easing = easing)) { width -> width / 3 } +
+                                        fadeOut(animationSpec = tween(slideDuration - 60, easing = easing)))
+                    }
+                },
+                label = "navTabNonLinearSlide",
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .nestedScroll(nestedScrollConnection)
-                    .background(MaterialTheme.colorScheme.surfaceContainer)
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    AnimatedVisibility(
-                        visible = isSearchActive,
-                        enter = expandVertically(animationSpec = tween(220, easing = FastOutSlowInEasing)) + fadeIn(animationSpec = tween(180)),
-                        exit = shrinkVertically(animationSpec = tween(200, easing = FastOutSlowInEasing)) + fadeOut(animationSpec = tween(160))
+            ) { tab ->
+                if (tab == 1) {
+                    SearchScreen(
+                        cards = uiState.allCards,
+                        onCardClick = { card ->
+                            viewModel.onCardClicked(card)
+                        },
+                        onClose = {
+                            currentNavTab = 0
+                        },
+                        nestedScrollConnection = nestedScrollConnection
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .nestedScroll(nestedScrollConnection)
+                            .background(MaterialTheme.colorScheme.surfaceContainer)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 18.dp, end = 18.dp, top = 6.dp, bottom = 6.dp)
+                        Column(
+                            modifier = Modifier.fillMaxSize()
                         ) {
+                            CategoryFilterRow(
+                                categories = uiState.categories,
+                                selectedCategoryIndex = activeCategoryIndex,
+                                onSelectCategory = { catId ->
+                                    val targetPage = if (catId == null) 0 else {
+                                        val idx = categoriesList.indexOfFirst { it.id == catId }
+                                        if (idx >= 0) idx + 1 else 0
+                                    }
+                                    manualTapTargetIndex = targetPage
+                                    if (pagerState.currentPage != targetPage) {
+                                        coroutineScope.launch {
+                                            pagerState.animateScrollToPage(
+                                                page = targetPage,
+                                                animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing)
+                                            )
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
+                            )
+
+                            // 4. Cards Count & Layout Toggle Row (Subtle, Expressive)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 18.dp, vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "${uiState.allCards.size} ${stringResource(R.string.all_cards_tab)}",
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontFamily = GoogleSansFlexSlantedCount,
+                                        fontWeight = FontWeight.Medium,
+                                        fontSize = 13.sp
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                                )
+
+    val sortButtonRotation by animateFloatAsState(
+        targetValue = if (showSortBottomSheet) 180f else 0f,
+        animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing),
+        label = "sortButtonRotation"
+    )
+
+                                Surface(
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                    border = null,
+                                    tonalElevation = 0.dp,
+                                    shadowElevation = 0.dp,
+                                    modifier = Modifier.size(38.dp)
+                                ) {
+                                    IconButton(
+                                        onClick = {
+                                            triggerHaptic()
+                                            showSortBottomSheet = true
+                                        }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Menu,
+                                            contentDescription = stringResource(R.string.sort_dialog_title),
+                                            tint = MaterialTheme.colorScheme.onSurface,
+                                            modifier = Modifier
+                                                .size(20.dp)
+                                                .rotate(sortButtonRotation)
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            // 3. Rounded Separator Surface for Cards (Matching Google Messages Reference)
                             Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(56.dp),
-                                shape = CircleShape,
-                                color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                border = null,
-                                shadowElevation = 0.dp
+                                    .weight(1f),
+                                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                                color = MaterialTheme.colorScheme.surface,
+                                tonalElevation = 0.dp
                             ) {
-                                Row(
+                                Box(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .padding(horizontal = 18.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                        .padding(top = 10.dp)
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Search,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    TextField(
-                                        value = uiState.searchQuery,
-                                        onValueChange = { viewModel.onSearchQueryChanged(it) },
-                                        placeholder = {
-                                            Text(
-                                                text = stringResource(R.string.search_placeholder),
-                                                style = MaterialTheme.typography.bodyLarge.copy(
-                                                    fontFamily = InterFamily,
-                                                    fontWeight = FontWeight.Medium,
-                                                    fontSize = 17.sp
-                                                ),
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                                            )
-                                        },
-                                        textStyle = MaterialTheme.typography.bodyLarge.copy(
-                                            fontFamily = InterFamily,
-                                            fontWeight = FontWeight.SemiBold,
-                                            fontSize = 17.sp,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        ),
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .focusRequester(focusRequester),
-                                        colors = TextFieldDefaults.colors(
-                                            focusedContainerColor = Color.Transparent,
-                                            unfocusedContainerColor = Color.Transparent,
-                                            focusedIndicatorColor = Color.Transparent,
-                                            unfocusedIndicatorColor = Color.Transparent
-                                        ),
-                                        singleLine = true
-                                    )
+                                    HorizontalPager(
+                                        state = pagerState,
+                                        modifier = Modifier.fillMaxSize()
+                                    ) { page ->
+                                        // Calculate page cards with favorites pinned to the top
+                                        val pageCards = remember(uiState.allCards, page, categoriesList, uiState.sortOrder, uiState.isSortAscending) {
+                                            val rawCards = if (page == 0) {
+                                                uiState.allCards
+                                            } else {
+                                                val catId = categoriesList.getOrNull(page - 1)?.id
+                                                if (catId != null) uiState.allCards.filter { it.categoryId == catId } else uiState.allCards
+                                            }
 
-                                    if (uiState.searchQuery.isNotEmpty()) {
-                                        IconButton(onClick = { viewModel.onSearchQueryChanged("") }) {
-                                            Icon(
-                                                imageVector = Icons.Default.Close,
-                                                contentDescription = "Clear",
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
+                                            sortCardsList(rawCards, uiState.sortOrder, uiState.isSortAscending)
                                         }
-                                    }
-                                }
-                            }
-                        }
-                    }
 
-                    CategoryFilterRow(
-                        categories = uiState.categories,
-                        selectedCategoryIndex = activeCategoryIndex,
-                        onSelectCategory = { catId ->
-                            val targetPage = if (catId == null) 0 else {
-                                val idx = categoriesList.indexOfFirst { it.id == catId }
-                                if (idx >= 0) idx + 1 else 0
-                            }
-                            manualTapTargetIndex = targetPage
-                            if (pagerState.currentPage != targetPage) {
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(
-                                        page = targetPage,
-                                        animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing)
-                                    )
-                                }
-                            }
-                        },
-                        modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
-                    )
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 18.dp, vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = when {
-                                uiState.onlyFavorites -> "${uiState.allCards.size} ${stringResource(R.string.favorites_tab)}"
-                                else -> "${uiState.allCards.size} ${stringResource(R.string.all_cards_tab)}"
-                            },
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                fontFamily = InterFamily,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp
-                            ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                        )
-
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box {
-                                val sortRotation by animateFloatAsState(
-                                    targetValue = if (showSortMenu) 90f else 0f,
-                                    animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
-                                    label = "sortRotation"
-                                )
-
-                                Surface(
-                                    shape = RoundedCornerShape(14.dp),
-                                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                    border = null,
-                                    modifier = Modifier.size(38.dp)
-                                ) {
-                                    IconButton(
-                                        onClick = {
-                                            triggerHaptic()
-                                            showSortMenu = true
-                                        }
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Outlined.SwapVert,
-                                            contentDescription = "Sort",
-                                            tint = MaterialTheme.colorScheme.onSurface,
-                                            modifier = Modifier
-                                                .size(20.dp)
-                                                .rotate(sortRotation)
-                                        )
-                                    }
-                                }
-
-                                DropdownMenu(
-                                    expanded = showSortMenu,
-                                    onDismissRequest = { showSortMenu = false },
-                                    offset = DpOffset(0.dp, 8.dp),
-                                    shape = RoundedCornerShape(14.dp),
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                    tonalElevation = 4.dp,
-                                    shadowElevation = 8.dp,
-                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-                                    modifier = Modifier.width(240.dp)
-                                ) {
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                text = stringResource(R.string.sort_alphabetical),
-                                                style = MaterialTheme.typography.bodyLarge.copy(
-                                                    fontFamily = OnestFamily,
-                                                    fontWeight = if (uiState.sortOrder == SortOrder.ALPHABETICAL) FontWeight.Bold else FontWeight.Medium,
-                                                    fontSize = 17.sp
-                                                ),
-                                                color = MaterialTheme.colorScheme.onSurface
-                                            )
-                                        },
-                                        trailingIcon = {
-                                            if (uiState.sortOrder == SortOrder.ALPHABETICAL) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Check,
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.onSurface,
-                                                    modifier = Modifier.size(20.dp)
+                                        if (pageCards.isEmpty()) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .verticalScroll(rememberScrollState())
+                                                    .padding(bottom = 32.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                val isPageFilterActive = (uiState.allCardsCount > 0) && (page > 0)
+                                                AnimatedEmptyWalletState(
+                                                    onScanClick = onNavigateToScanner,
+                                                    onManualClick = onNavigateToAddCard,
+                                                    isSearchActive = isPageFilterActive
                                                 )
                                             }
-                                        },
-                                        onClick = {
-                                            triggerHaptic()
-                                            viewModel.setSortOrder(SortOrder.ALPHABETICAL)
-                                            showSortMenu = false
-                                        },
-                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
-                                    )
-
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp),
-                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-                                    )
-
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                text = stringResource(R.string.sort_date_added),
-                                                style = MaterialTheme.typography.bodyLarge.copy(
-                                                    fontFamily = OnestFamily,
-                                                    fontWeight = if (uiState.sortOrder == SortOrder.DATE_ADDED) FontWeight.Bold else FontWeight.Medium,
-                                                    fontSize = 17.sp
-                                                ),
-                                                color = MaterialTheme.colorScheme.onSurface
-                                            )
-                                        },
-                                        trailingIcon = {
-                                            if (uiState.sortOrder == SortOrder.DATE_ADDED) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Check,
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.onSurface,
-                                                    modifier = Modifier.size(20.dp)
-                                                )
-                                            }
-                                        },
-                                        onClick = {
-                                            triggerHaptic()
-                                            viewModel.setSortOrder(SortOrder.DATE_ADDED)
-                                            showSortMenu = false
-                                        },
-                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
-                                    )
-
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp),
-                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-                                    )
-
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                text = stringResource(R.string.sort_frequency),
-                                                style = MaterialTheme.typography.bodyLarge.copy(
-                                                    fontFamily = OnestFamily,
-                                                    fontWeight = if (uiState.sortOrder == SortOrder.FREQUENCY) FontWeight.Bold else FontWeight.Medium,
-                                                    fontSize = 17.sp
-                                                ),
-                                                color = MaterialTheme.colorScheme.onSurface
-                                            )
-                                        },
-                                        trailingIcon = {
-                                            if (uiState.sortOrder == SortOrder.FREQUENCY) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Check,
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.onSurface,
-                                                    modifier = Modifier.size(20.dp)
-                                                )
-                                            }
-                                        },
-                                        onClick = {
-                                            triggerHaptic()
-                                            viewModel.setSortOrder(SortOrder.FREQUENCY)
-                                            showSortMenu = false
-                                        },
-                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
-                                    )
-                                }
-                            }
-
-                            Box {
-                                val layoutRotation by animateFloatAsState(
-                                    targetValue = if (showLayoutMenu) 90f else 0f,
-                                    animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
-                                    label = "layoutRotation"
-                                )
-
-                                Surface(
-                                    shape = RoundedCornerShape(14.dp),
-                                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                    border = null,
-                                    modifier = Modifier.size(38.dp)
-                                ) {
-                                    IconButton(
-                                        onClick = {
-                                            triggerHaptic()
-                                            showLayoutMenu = true
-                                        }
-                                    ) {
-                                        Icon(
-                                            imageVector = when (uiState.layoutMode) {
-                                                LayoutMode.FULL_CARDS -> Icons.Outlined.ViewAgenda
-                                                LayoutMode.LIST_ROWS -> Icons.Outlined.ViewStream
-                                                LayoutMode.GRID_TWO_COLUMNS -> Icons.Outlined.GridView
-                                            },
-                                            contentDescription = "Layout",
-                                            tint = MaterialTheme.colorScheme.onSurface,
-                                            modifier = Modifier
-                                                .size(20.dp)
-                                                .rotate(layoutRotation)
-                                        )
-                                    }
-                                }
-
-                                DropdownMenu(
-                                    expanded = showLayoutMenu,
-                                    onDismissRequest = { showLayoutMenu = false },
-                                    offset = DpOffset(0.dp, 8.dp),
-                                    shape = RoundedCornerShape(14.dp),
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                    tonalElevation = 4.dp,
-                                    shadowElevation = 8.dp,
-                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-                                    modifier = Modifier.width(240.dp)
-                                ) {
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                text = stringResource(R.string.layout_full_cards),
-                                                style = MaterialTheme.typography.bodyLarge.copy(
-                                                    fontFamily = OnestFamily,
-                                                    fontWeight = if (uiState.layoutMode == LayoutMode.FULL_CARDS) FontWeight.Bold else FontWeight.Medium,
-                                                    fontSize = 17.sp
-                                                ),
-                                                color = MaterialTheme.colorScheme.onSurface
-                                            )
-                                        },
-                                        leadingIcon = {
-                                            Icon(
-                                                imageVector = Icons.Outlined.ViewAgenda,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.size(22.dp)
-                                            )
-                                        },
-                                        trailingIcon = {
-                                            if (uiState.layoutMode == LayoutMode.FULL_CARDS) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Check,
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.onSurface,
-                                                    modifier = Modifier.size(20.dp)
-                                                )
-                                            }
-                                        },
-                                        onClick = {
-                                            triggerHaptic()
-                                            viewModel.setLayoutMode(LayoutMode.FULL_CARDS, context)
-                                            showLayoutMenu = false
-                                        },
-                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
-                                    )
-
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp),
-                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-                                    )
-
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                text = stringResource(R.string.layout_list_rows),
-                                                style = MaterialTheme.typography.bodyLarge.copy(
-                                                    fontFamily = OnestFamily,
-                                                    fontWeight = if (uiState.layoutMode == LayoutMode.LIST_ROWS) FontWeight.Bold else FontWeight.Medium,
-                                                    fontSize = 17.sp
-                                                ),
-                                                color = MaterialTheme.colorScheme.onSurface
-                                            )
-                                        },
-                                        leadingIcon = {
-                                            Icon(
-                                                imageVector = Icons.Outlined.ViewStream,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.size(22.dp)
-                                            )
-                                        },
-                                        trailingIcon = {
-                                            if (uiState.layoutMode == LayoutMode.LIST_ROWS) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Check,
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.onSurface,
-                                                    modifier = Modifier.size(20.dp)
-                                                )
-                                            }
-                                        },
-                                        onClick = {
-                                            triggerHaptic()
-                                            viewModel.setLayoutMode(LayoutMode.LIST_ROWS, context)
-                                            showLayoutMenu = false
-                                        },
-                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
-                                    )
-
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp),
-                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-                                    )
-
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                text = stringResource(R.string.layout_grid_2col),
-                                                style = MaterialTheme.typography.bodyLarge.copy(
-                                                    fontFamily = OnestFamily,
-                                                    fontWeight = if (uiState.layoutMode == LayoutMode.GRID_TWO_COLUMNS) FontWeight.Bold else FontWeight.Medium,
-                                                    fontSize = 17.sp
-                                                ),
-                                                color = MaterialTheme.colorScheme.onSurface
-                                            )
-                                        },
-                                        leadingIcon = {
-                                            Icon(
-                                                imageVector = Icons.Outlined.GridView,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.size(22.dp)
-                                            )
-                                        },
-                                        trailingIcon = {
-                                            if (uiState.layoutMode == LayoutMode.GRID_TWO_COLUMNS) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Check,
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.onSurface,
-                                                    modifier = Modifier.size(20.dp)
-                                                )
-                                            }
-                                        },
-                                        onClick = {
-                                            triggerHaptic()
-                                            viewModel.setLayoutMode(LayoutMode.GRID_TWO_COLUMNS, context)
-                                            showLayoutMenu = false
-                                        },
-                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    // 3. Rounded Separator Surface for Cards (Matching Google Messages Reference)
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-                        color = MaterialTheme.colorScheme.surface,
-                        tonalElevation = 0.dp
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(top = 10.dp)
-                        ) {
-                            AnimatedContent(
-                                targetState = uiState.onlyFavorites,
-                                transitionSpec = {
-                                    val duration = 260
-                                    if (targetState) {
-                                        (slideInHorizontally(tween(duration, easing = FastOutSlowInEasing)) { width -> width / 4 } +
-                                                fadeIn(tween(duration, easing = FastOutSlowInEasing)) +
-                                                scaleIn(tween(duration, easing = FastOutSlowInEasing), initialScale = 0.95f)) togetherWith
-                                                (slideOutHorizontally(tween(duration - 60, easing = FastOutSlowInEasing)) { width -> -width / 4 } +
-                                                        fadeOut(tween(duration - 60, easing = FastOutSlowInEasing)) +
-                                                        scaleOut(tween(duration - 60, easing = FastOutSlowInEasing), targetScale = 0.95f))
-                                    } else {
-                                        (slideInHorizontally(tween(duration, easing = FastOutSlowInEasing)) { width -> -width / 4 } +
-                                                fadeIn(tween(duration, easing = FastOutSlowInEasing)) +
-                                                scaleIn(tween(duration, easing = FastOutSlowInEasing), initialScale = 0.95f)) togetherWith
-                                                (slideOutHorizontally(tween(duration - 60, easing = FastOutSlowInEasing)) { width -> width / 4 } +
-                                                        fadeOut(tween(duration - 60, easing = FastOutSlowInEasing)) +
-                                                        scaleOut(tween(duration - 60, easing = FastOutSlowInEasing), targetScale = 0.95f))
-                                    }
-                                },
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clipToBounds(),
-                                label = "favTabExpressiveTransition"
-                            ) { targetOnlyFavs ->
-                                HorizontalPager(
-                                    state = pagerState,
-                                    modifier = Modifier.fillMaxSize()
-                                ) { page ->
-                                    // Calculate page cards directly from uiState.allCards filtered by targetOnlyFavs scene
-                                    val pageCards = remember(uiState.allCards, targetOnlyFavs, page, categoriesList, uiState.sortOrder) {
-                                        val favFiltered = uiState.allCards.filter { card ->
-                                            !targetOnlyFavs || card.isFavorite
-                                        }
-                                        val rawCards = if (page == 0) {
-                                            favFiltered
                                         } else {
-                                            val catId = categoriesList.getOrNull(page - 1)?.id
-                                            if (catId != null) favFiltered.filter { it.categoryId == catId } else favFiltered
-                                        }
-
-                                        when (uiState.sortOrder) {
-                                            SortOrder.ALPHABETICAL -> rawCards.sortedBy { it.title.lowercase() }
-                                            SortOrder.DATE_ADDED -> rawCards.sortedByDescending { it.createdAt }
-                                            SortOrder.FREQUENCY -> rawCards.sortedWith(
-                                                compareByDescending<LoyaltyCard> { it.useCount }
-                                                    .thenByDescending { it.lastUsedAt }
-                                                    .thenByDescending { it.createdAt }
+                                            val pageListState = rememberLazyListState()
+                                            val pageGridState = rememberLazyGridState()
+                                            val adaptivePadding = PaddingValues(
+                                                horizontal = windowSizeInfo.horizontalPadding,
+                                                vertical = 6.dp
                                             )
-                                        }
-                                    }
 
-                                    if (pageCards.isEmpty()) {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxSize()
-                                                .verticalScroll(rememberScrollState())
-                                                .padding(bottom = 32.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            val isPageFilterActive = (uiState.allCardsCount > 0) && (
-                                                uiState.searchQuery.isNotBlank() ||
-                                                page > 0 ||
-                                                targetOnlyFavs
-                                            )
-                                            AnimatedEmptyWalletState(
-                                                onScanClick = onNavigateToScanner,
-                                                onManualClick = onNavigateToAddCard,
-                                                isSearchActive = isPageFilterActive
-                                            )
-                                        }
-                                     } else {
-                                        val pageListState = rememberLazyListState()
-                                        val pageGridState = rememberLazyGridState()
-                                        val adaptivePadding = PaddingValues(
-                                            horizontal = windowSizeInfo.horizontalPadding,
-                                            vertical = 6.dp
-                                        )
-
-                                        when (uiState.layoutMode) {
-                                            LayoutMode.FULL_CARDS -> {
-                                                if (windowSizeInfo.isWideScreen) {
-                                                    // On Tablets, Foldables, and Landscape: display cards in a responsive multi-column grid
-                                                    LazyVerticalGrid(
-                                                        state = pageGridState,
-                                                        columns = GridCells.Adaptive(minSize = 340.dp),
-                                                        modifier = Modifier.fillMaxSize(),
-                                                        contentPadding = adaptivePadding,
-                                                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                                                    ) {
-                                                        items(pageCards, key = { it.id }) { card ->
-                                                            Box {
+                                            when (uiState.layoutMode) {
+                                                LayoutMode.FULL_CARDS -> {
+                                                    if (windowSizeInfo.isWideScreen) {
+                                                        // On Tablets, Foldables, and Landscape: display cards in a responsive multi-column grid
+                                                        LazyVerticalGrid(
+                                                            state = pageGridState,
+                                                            columns = GridCells.Adaptive(minSize = 340.dp),
+                                                            modifier = Modifier.fillMaxSize(),
+                                                            contentPadding = adaptivePadding,
+                                                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                                                        ) {
+                                                            items(pageCards, key = { it.id }) { card ->
                                                                 ExpressiveLoyaltyCard(
                                                                     card = card,
-                                                                    searchQuery = uiState.searchQuery,
+                                                                    searchQuery = "",
                                                                     onClick = {
                                                                         triggerHaptic()
                                                                         viewModel.onCardClicked(card)
-                                                                    },
-                                                                    onLongClick = { touchOffset ->
-                                                                        triggerHaptic()
-                                                                        pressOffset = touchOffset
-                                                                        activeCardMenuId = card.id
                                                                     }
                                                                 )
-
-                                                                DesktopStyleCardContextMenu(
-                                                                    expanded = activeCardMenuId == card.id,
-                                                                    card = card,
-                                                                    pressOffset = pressOffset,
-                                                                    onDismissRequest = { activeCardMenuId = null },
-                                                                    onToggleFavorite = { viewModel.onToggleFavorite(card) },
-                                                                    onEdit = { onNavigateToEditCard(card.id) },
-                                                                    onDelete = { cardToDelete = card }
-                                                                )
+                                                            }
+                                                            item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                                                                Spacer(modifier = Modifier.height(100.dp))
                                                             }
                                                         }
-                                                        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
-                                                            Spacer(modifier = Modifier.height(100.dp))
-                                                        }
-                                                    }
-                                                } else {
-                                                    // On Compact Phones: single-column full card stack
-                                                    LazyColumn(
-                                                        state = pageListState,
-                                                        modifier = Modifier.fillMaxSize(),
-                                                        contentPadding = adaptivePadding,
-                                                        verticalArrangement = Arrangement.spacedBy(14.dp)
-                                                    ) {
-                                                        items(pageCards, key = { it.id }) { card ->
-                                                            Box {
-                                                                ExpressiveLoyaltyCard(
-                                                                    card = card,
-                                                                    searchQuery = uiState.searchQuery,
-                                                                    onClick = {
-                                                                        triggerHaptic()
-                                                                        viewModel.onCardClicked(card)
-                                                                    },
-                                                                    onLongClick = { touchOffset ->
-                                                                        triggerHaptic()
-                                                                        pressOffset = touchOffset
-                                                                        activeCardMenuId = card.id
-                                                                    }
-                                                                )
-
-                                                                DesktopStyleCardContextMenu(
-                                                                    expanded = activeCardMenuId == card.id,
-                                                                    card = card,
-                                                                    pressOffset = pressOffset,
-                                                                    onDismissRequest = { activeCardMenuId = null },
-                                                                    onToggleFavorite = { viewModel.onToggleFavorite(card) },
-                                                                    onEdit = { onNavigateToEditCard(card.id) },
-                                                                    onDelete = { cardToDelete = card }
-                                                                )
-                                                            }
-                                                        }
-                                                        item { Spacer(modifier = Modifier.height(100.dp)) }
-                                                    }
-                                                }
-                                            }
-                                            LayoutMode.LIST_ROWS -> {
-                                                if (windowSizeInfo.isTablet && windowSizeInfo.isLandscape) {
-                                                    // 2-column rows on very wide tablet landscape
-                                                    LazyVerticalGrid(
-                                                        state = pageGridState,
-                                                        columns = GridCells.Fixed(2),
-                                                        modifier = Modifier.fillMaxSize(),
-                                                        contentPadding = adaptivePadding,
-                                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                                                    ) {
-                                                        items(pageCards, key = { it.id }) { card ->
-                                                            Box {
-                                                                ExpressiveLoyaltyCardRow(
-                                                                    card = card,
-                                                                    searchQuery = uiState.searchQuery,
-                                                                    onClick = {
-                                                                        triggerHaptic()
-                                                                        viewModel.onCardClicked(card)
-                                                                    },
-                                                                    onLongClick = { touchOffset ->
-                                                                        triggerHaptic()
-                                                                        pressOffset = touchOffset
-                                                                        activeCardMenuId = card.id
-                                                                    }
-                                                                )
-
-                                                                DesktopStyleCardContextMenu(
-                                                                    expanded = activeCardMenuId == card.id,
-                                                                    card = card,
-                                                                    pressOffset = pressOffset,
-                                                                    onDismissRequest = { activeCardMenuId = null },
-                                                                    onToggleFavorite = { viewModel.onToggleFavorite(card) },
-                                                                    onEdit = { onNavigateToEditCard(card.id) },
-                                                                    onDelete = { cardToDelete = card }
-                                                                )
-                                                            }
-                                                        }
-                                                        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
-                                                            Spacer(modifier = Modifier.height(100.dp))
-                                                        }
-                                                    }
-                                                } else {
-                                                    Box(
-                                                        modifier = Modifier.fillMaxSize(),
-                                                        contentAlignment = Alignment.TopCenter
-                                                    ) {
+                                                    } else {
+                                                        // On Compact Phones: single-column full card stack
                                                         LazyColumn(
                                                             state = pageListState,
-                                                            modifier = Modifier
-                                                                .fillMaxSize()
-                                                                .widthIn(max = 760.dp),
+                                                            modifier = Modifier.fillMaxSize(),
                                                             contentPadding = adaptivePadding,
-                                                            verticalArrangement = Arrangement.spacedBy(3.dp)
+                                                            verticalArrangement = Arrangement.spacedBy(14.dp)
                                                         ) {
-                                                            itemsIndexed(pageCards, key = { _, it -> it.id }) { index, card ->
-                                                                Box {
-                                                                    ExpressiveLoyaltyCardRow(
-                                                                        card = card,
-                                                                        searchQuery = uiState.searchQuery,
-                                                                        index = index,
-                                                                        totalCount = pageCards.size,
-                                                                        onClick = {
-                                                                            triggerHaptic()
-                                                                            viewModel.onCardClicked(card)
-                                                                        },
-                                                                        onLongClick = { touchOffset ->
-                                                                            triggerHaptic()
-                                                                            pressOffset = touchOffset
-                                                                            activeCardMenuId = card.id
-                                                                        }
-                                                                    )
-
-                                                                    DesktopStyleCardContextMenu(
-                                                                        expanded = activeCardMenuId == card.id,
-                                                                        card = card,
-                                                                        pressOffset = pressOffset,
-                                                                        onDismissRequest = { activeCardMenuId = null },
-                                                                        onToggleFavorite = { viewModel.onToggleFavorite(card) },
-                                                                        onEdit = { onNavigateToEditCard(card.id) },
-                                                                        onDelete = { cardToDelete = card }
-                                                                    )
-                                                                }
+                                                            items(pageCards, key = { it.id }) { card ->
+                                                                ExpressiveLoyaltyCard(
+                                                                    card = card,
+                                                                    searchQuery = "",
+                                                                    onClick = {
+                                                                        triggerHaptic()
+                                                                        viewModel.onCardClicked(card)
+                                                                    }
+                                                                )
                                                             }
                                                             item { Spacer(modifier = Modifier.height(100.dp)) }
                                                         }
                                                     }
                                                 }
-                                            }
-                                            LayoutMode.GRID_TWO_COLUMNS -> {
-                                                val adaptiveGridCols = windowSizeInfo.getAdaptiveGridColumns(isFullCardMode = false)
-                                                LazyVerticalGrid(
-                                                    state = pageGridState,
-                                                    columns = GridCells.Fixed(adaptiveGridCols),
-                                                    modifier = Modifier.fillMaxSize(),
-                                                    contentPadding = adaptivePadding,
-                                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                                                ) {
-                                                    items(pageCards, key = { it.id }) { card ->
-                                                        Box {
+                                                LayoutMode.LIST_ROWS -> {
+                                                    if (windowSizeInfo.isTablet && windowSizeInfo.isLandscape) {
+                                                        // 2-column rows on very wide tablet landscape
+                                                        LazyVerticalGrid(
+                                                            state = pageGridState,
+                                                            columns = GridCells.Fixed(2),
+                                                            modifier = Modifier.fillMaxSize(),
+                                                            contentPadding = adaptivePadding,
+                                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                                                        ) {
+                                                            items(pageCards, key = { it.id }) { card ->
+                                                                ExpressiveLoyaltyCardRow(
+                                                                    card = card,
+                                                                    searchQuery = "",
+                                                                    onClick = {
+                                                                        triggerHaptic()
+                                                                        viewModel.onCardClicked(card)
+                                                                    }
+                                                                )
+                                                            }
+                                                            item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                                                                Spacer(modifier = Modifier.height(100.dp))
+                                                            }
+                                                        }
+                                                    } else {
+                                                        Box(
+                                                            modifier = Modifier.fillMaxSize(),
+                                                            contentAlignment = Alignment.TopCenter
+                                                        ) {
+                                                            LazyColumn(
+                                                                state = pageListState,
+                                                                modifier = Modifier
+                                                                    .fillMaxSize()
+                                                                    .widthIn(max = 760.dp),
+                                                                contentPadding = adaptivePadding,
+                                                                verticalArrangement = Arrangement.spacedBy(3.dp)
+                                                            ) {
+                                                                itemsIndexed(pageCards, key = { _, it -> it.id }) { index, card ->
+                                                                    ExpressiveLoyaltyCardRow(
+                                                                        card = card,
+                                                                        searchQuery = "",
+                                                                        index = index,
+                                                                        totalCount = pageCards.size,
+                                                                        onClick = {
+                                                                            triggerHaptic()
+                                                                            viewModel.onCardClicked(card)
+                                                                        }
+                                                                    )
+                                                                }
+                                                                item { Spacer(modifier = Modifier.height(100.dp)) }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                LayoutMode.GRID_TWO_COLUMNS -> {
+                                                    val adaptiveGridCols = windowSizeInfo.getAdaptiveGridColumns(isFullCardMode = false)
+                                                    LazyVerticalGrid(
+                                                        state = pageGridState,
+                                                        columns = GridCells.Fixed(adaptiveGridCols),
+                                                        modifier = Modifier.fillMaxSize(),
+                                                        contentPadding = adaptivePadding,
+                                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                                    ) {
+                                                        items(pageCards, key = { it.id }) { card ->
                                                             ExpressiveLoyaltyCardGrid(
                                                                 card = card,
-                                                                searchQuery = uiState.searchQuery,
+                                                                searchQuery = "",
                                                                 onClick = {
                                                                     triggerHaptic()
                                                                     viewModel.onCardClicked(card)
-                                                                },
-                                                                onLongClick = { touchOffset ->
-                                                                    triggerHaptic()
-                                                                    pressOffset = touchOffset
-                                                                    activeCardMenuId = card.id
                                                                 }
                                                             )
-
-                                                            DesktopStyleCardContextMenu(
-                                                                expanded = activeCardMenuId == card.id,
-                                                                card = card,
-                                                                pressOffset = pressOffset,
-                                                                onDismissRequest = { activeCardMenuId = null },
-                                                                onToggleFavorite = { viewModel.onToggleFavorite(card) },
-                                                                onEdit = { onNavigateToEditCard(card.id) },
-                                                                onDelete = { cardToDelete = card }
-                                                            )
                                                         }
-                                                    }
-                                                    item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
-                                                        Spacer(modifier = Modifier.height(100.dp))
+                                                        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                                                            Spacer(modifier = Modifier.height(100.dp))
+                                                        }
                                                     }
                                                 }
                                             }
@@ -1330,15 +783,17 @@ fun WalletScreen(
             }
         }
 
-        // Expandable Speed Dial FAB Menu (Anchored at Root Level - Dims Entire Window including Top and Bottom Bars)
-        M3ExpressiveSpeedDialFab(
-            onScanClick = onNavigateToScanner,
-            onManualClick = onNavigateToAddCard,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .navigationBarsPadding()
-                .padding(end = windowSizeInfo.horizontalPadding, bottom = 96.dp)
-        )
+        if (currentNavTab == 0) {
+            // Expandable Speed Dial FAB Menu (Anchored at Root Level - Dims Entire Window including Top and Bottom Bars)
+            M3ExpressiveSpeedDialFab(
+                onScanClick = onNavigateToScanner,
+                onManualClick = onNavigateToAddCard,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .navigationBarsPadding()
+                    .padding(end = windowSizeInfo.horizontalPadding, bottom = 96.dp)
+            )
+        }
     }
 
     // POS Mode / Detail Bottom Sheet (Rendered only when Wallet is the top visible destination)
@@ -1409,199 +864,261 @@ fun WalletScreen(
             }
         )
     }
+
+    if (showSortBottomSheet) {
+        SortAndLayoutBottomSheet(
+            sortOrder = uiState.sortOrder,
+            isSortAscending = uiState.isSortAscending,
+            layoutMode = uiState.layoutMode,
+            onSelectSortOrder = { order ->
+                viewModel.setSortOrder(order)
+            },
+            onToggleSortDirection = {
+                viewModel.toggleSortDirection()
+            },
+            onSelectLayoutMode = { mode ->
+                viewModel.setLayoutMode(mode, context)
+            },
+            onDismiss = { showSortBottomSheet = false }
+        )
+    }
 }
 
 /**
- * Animated Desktop-Style Cursor Positioned Context Menu with Section Dividers & Tactile Haptic Vibration
+ * Material 3 Expressive Sort & Layout Bottom Sheet
+ * Matches the reference design with direction toggle card, radio-button criteria list,
+ * and segmented switcher for layout modes.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DesktopStyleCardContextMenu(
-    expanded: Boolean,
-    card: LoyaltyCard,
-    pressOffset: Offset,
-    onDismissRequest: () -> Unit,
-    onToggleFavorite: () -> Unit,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit
+private fun SortAndLayoutBottomSheet(
+    sortOrder: SortOrder,
+    isSortAscending: Boolean,
+    layoutMode: LayoutMode,
+    onSelectSortOrder: (SortOrder) -> Unit,
+    onToggleSortDirection: () -> Unit,
+    onSelectLayoutMode: (LayoutMode) -> Unit,
+    onDismiss: () -> Unit
 ) {
-    val visibleState = remember { MutableTransitionState(false) }
+    val isDark = isSystemInDarkTheme()
+    val isOled = MaterialTheme.colorScheme.surface == Color.Black
+    val hapticHelper = rememberHapticHelper()
 
-    LaunchedEffect(expanded) {
-        visibleState.targetState = expanded
+    val bottomSheetContainerColor = when {
+        isOled -> Color.Black
+        isDark -> MaterialTheme.colorScheme.surfaceContainer
+        else -> MaterialTheme.colorScheme.surfaceContainerLow
     }
 
-    if (!expanded && visibleState.isIdle && !visibleState.currentState) return
-
-    val pxX = pressOffset.x.toInt()
-    val pxY = pressOffset.y.toInt()
-
-    Popup(
-        onDismissRequest = onDismissRequest,
-        popupPositionProvider = remember(pxX, pxY) {
-            object : PopupPositionProvider {
-                override fun calculatePosition(
-                    anchorBounds: IntRect,
-                    windowSize: IntSize,
-                    layoutDirection: LayoutDirection,
-                    popupContentSize: IntSize
-                ): IntOffset {
-                    var x = anchorBounds.left + pxX
-                    var y = anchorBounds.top + pxY
-
-                    if (x + popupContentSize.width > windowSize.width - 16) {
-                        x = (windowSize.width - popupContentSize.width - 16).coerceAtLeast(16)
-                    }
-                    if (y + popupContentSize.height > windowSize.height - 16) {
-                        y = (windowSize.height - popupContentSize.height - 16).coerceAtLeast(16)
-                    }
-
-                    return IntOffset(x, y)
-                }
-            }
-        },
-        properties = PopupProperties(focusable = true)
-    ) {
-        AnimatedVisibility(
-            visibleState = visibleState,
-            enter = fadeIn(animationSpec = tween(220, easing = FastOutSlowInEasing)) + scaleIn(
-                animationSpec = tween(220, easing = FastOutSlowInEasing),
-                initialScale = 0.8f
-            ),
-            exit = fadeOut(animationSpec = tween(160, easing = FastOutSlowInEasing)) + scaleOut(
-                animationSpec = tween(160, easing = FastOutSlowInEasing),
-                targetScale = 0.8f
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        shape = BottomSheetTopShape,
+        containerColor = bottomSheetContainerColor,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        dragHandle = {
+            BottomSheetDefaults.DragHandle(
+                color = MaterialTheme.colorScheme.outlineVariant
             )
+        }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentWidth(Alignment.CenterHorizontally)
+                .widthIn(max = 620.dp)
+                .padding(horizontal = 20.dp)
+                .padding(top = 4.dp, bottom = 32.dp)
         ) {
+            // Title "Сортировать по"
+            Text(
+                text = stringResource(R.string.sort_dialog_title),
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontFamily = OnestFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 24.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            // 1. Order Direction Card ("Порядок" / "По возрастанию" / "По убыванию")
             Surface(
-                shape = RoundedCornerShape(14.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-                tonalElevation = 4.dp,
-                shadowElevation = 8.dp,
-                modifier = Modifier.width(240.dp)
+                onClick = {
+                    hapticHelper.performClick()
+                    onToggleSortDirection()
+                },
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                border = null,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Column(
-                    modifier = Modifier.padding(vertical = 6.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // 1. Favorite toggle item
                     Surface(
-                        onClick = {
-                            onToggleFavorite()
-                            onDismissRequest()
-                        },
-                        color = Color.Transparent,
-                        modifier = Modifier.fillMaxWidth()
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(42.dp)
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 14.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = if (card.isFavorite) stringResource(R.string.remove_favorite) else stringResource(R.string.add_favorite),
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontFamily = OnestFamily,
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 17.sp
-                                ),
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.weight(1f)
+                        Box(contentAlignment = Alignment.Center) {
+                            val arrowRotation by animateFloatAsState(
+                                targetValue = if (isSortAscending) 0f else 180f,
+                                animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing),
+                                label = "sortArrowRotation"
                             )
-                            Spacer(modifier = Modifier.width(12.dp))
                             Icon(
-                                imageVector = if (card.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                                imageVector = Icons.Rounded.ArrowUpward,
                                 contentDescription = null,
-                                tint = if (card.isFavorite) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier
+                                    .size(22.dp)
+                                    .rotate(arrowRotation),
+                                tint = MaterialTheme.colorScheme.onPrimary
                             )
                         }
                     }
 
-                    HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-                    )
+                    Spacer(modifier = Modifier.width(16.dp))
 
-                    // 2. Edit item
-                    Surface(
-                        onClick = {
-                            onEdit()
-                            onDismissRequest()
-                        },
-                        color = Color.Transparent,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 14.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = stringResource(R.string.edit_action),
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontFamily = OnestFamily,
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 17.sp
-                                ),
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.weight(1f)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Icon(
-                                imageVector = Icons.Outlined.Edit,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.sort_order_title),
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontFamily = OnestFamily,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            ),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = if (isSortAscending)
+                                stringResource(R.string.sort_order_ascending)
+                            else
+                                stringResource(R.string.sort_order_descending),
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontFamily = OnestFamily,
+                                fontWeight = FontWeight.Normal,
+                                fontSize = 14.sp
+                            ),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.82f)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // 2. Grouped Sort Criteria Items with 2.dp seams and RadioButtons
+            val sortOptions = listOf(
+                SortOrder.ALPHABETICAL to stringResource(R.string.sort_by_name),
+                SortOrder.DATE_ADDED to stringResource(R.string.sort_by_date),
+                SortOrder.FREQUENCY to stringResource(R.string.sort_by_frequency)
+            )
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                sortOptions.forEachIndexed { index, (order, label) ->
+                    val isSelected = sortOrder == order
+                    val shape = when (index) {
+                        0 -> RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 4.dp, bottomEnd = 4.dp)
+                        sortOptions.size - 1 -> RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 20.dp, bottomEnd = 20.dp)
+                        else -> RoundedCornerShape(4.dp)
                     }
 
-                    HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-                    )
+                    val itemColor = if (isSelected) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    } else if (isDark) {
+                        MaterialTheme.colorScheme.surfaceContainerHigh
+                    } else {
+                        MaterialTheme.colorScheme.surfaceContainerHighest
+                    }
 
-                    // 3. Delete item
                     Surface(
                         onClick = {
-                            onDelete()
-                            onDismissRequest()
+                            hapticHelper.performClick()
+                            onSelectSortOrder(order)
                         },
-                        color = Color.Transparent,
+                        shape = shape,
+                        color = itemColor,
+                        contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                        border = null,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 14.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                                .padding(horizontal = 18.dp, vertical = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = stringResource(R.string.delete_action),
+                                text = label,
                                 style = MaterialTheme.typography.bodyLarge.copy(
                                     fontFamily = OnestFamily,
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 17.sp
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    fontSize = 16.sp
                                 ),
-                                color = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.weight(1f)
+                                color = if (isSelected)
+                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                else
+                                    MaterialTheme.colorScheme.onSurface
                             )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Icon(
-                                imageVector = Icons.Outlined.Delete,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(22.dp)
+
+                            RadioButton(
+                                selected = isSelected,
+                                onClick = null,
+                                colors = RadioButtonDefaults.colors(
+                                    selectedColor = MaterialTheme.colorScheme.primary,
+                                    unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                )
                             )
                         }
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // 3. Layout Mode Switcher Section (styled like Language switcher in Settings)
+            Text(
+                text = stringResource(R.string.layout_section_title),
+                style = MaterialTheme.typography.labelLarge.copy(
+                    fontFamily = OnestFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                ),
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+            )
+
+            val layoutCardsLabel = stringResource(R.string.layout_cards)
+            val layoutListLabel = stringResource(R.string.layout_list)
+            val layoutGridLabel = stringResource(R.string.layout_grid)
+
+            val layoutItems = remember(layoutCardsLabel, layoutListLabel, layoutGridLabel) {
+                listOf(
+                    SegmentItem(LayoutMode.FULL_CARDS, layoutCardsLabel, Icons.Rounded.ViewAgenda),
+                    SegmentItem(LayoutMode.LIST_ROWS, layoutListLabel, Icons.Rounded.ViewHeadline),
+                    SegmentItem(LayoutMode.GRID_TWO_COLUMNS, layoutGridLabel, Icons.Rounded.GridView)
+                )
+            }
+
+            M3SettingsSegmentedSwitcher(
+                items = layoutItems,
+                selectedValue = layoutMode,
+                showLabels = true,
+                onSelect = {
+                    onSelectLayoutMode(it)
+                }
+            )
         }
     }
 }

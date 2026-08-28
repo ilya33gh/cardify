@@ -1,8 +1,11 @@
 <resources>
     <string name="app_name">Cardify</string>
     <string name="search_placeholder">Search…</string>
+    <string name="search_tab">Search</string>
+    <string name="search_prompt_title">Search cards</string>
+    <string name="search_prompt_subtitle">Enter store title, barcode number or note</string>
     <string name="all_categories">All</string>
-    <string name="all_cards_tab">All Cards</string>
+    <string name="all_cards_tab">Cards</string>
     <string name="favorites_tab">Favorites</string>
     <string name="empty_wallet_title">Wallet is empty</string>
     <string name="empty_wallet_subtitle">Add your first card for instant access</string>
@@ -117,6 +120,17 @@
     <string name="unlock_button_action">Unlock</string>
 
     <!-- Sorting & Layout -->
+    <string name="sort_dialog_title">Sort by</string>
+    <string name="sort_order_title">Order</string>
+    <string name="sort_order_ascending">Ascending</string>
+    <string name="sort_order_descending">Descending</string>
+    <string name="sort_by_name">Name</string>
+    <string name="sort_by_date">Date added</string>
+    <string name="sort_by_frequency">Most used</string>
+    <string name="layout_section_title">Layout</string>
+    <string name="layout_cards">Cards</string>
+    <string name="layout_list">List</string>
+    <string name="layout_grid">Grid</string>
     <string name="sort_alphabetical">Alphabetical (A-Z)</string>
     <string name="sort_date_added">Date added</string>
     <string name="sort_frequency">Most used</string>

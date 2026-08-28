@@ -4,14 +4,17 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import kotlin.math.roundToInt
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -20,9 +23,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
+import com.cardify.app.ui.theme.GoogleSansFlexCardTitle
+import com.cardify.app.ui.theme.CardNumberFontFamily
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,15 +34,23 @@ import androidx.compose.ui.zIndex
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.unit.Velocity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -99,16 +111,17 @@ fun buildHighlightedText(
  * Symmetrical 24.dp shape, harmonious 16.dp barcode island, clean brand monogram,
  * high-contrast solid colors, and tactile Google press physics (scale = 0.96f).
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ExpressiveLoyaltyCard(
     card: LoyaltyCard,
     onClick: () -> Unit,
-    onLongClick: (androidx.compose.ui.geometry.Offset) -> Unit = {},
     modifier: Modifier = Modifier,
     shape: Shape = ExpressiveCardShape,
     searchQuery: String = ""
 ) {
-    var isPressed by remember { mutableStateOf(false) }
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
 
     // Google Smooth Press Physics (scale = 0.96f)
     val scale by animateFloatAsState(
@@ -127,17 +140,12 @@ fun ExpressiveLoyaltyCard(
         modifier = modifier
             .fillMaxWidth()
             .scale(scale)
-            .pointerInput(card.id) {
-                detectTapGestures(
-                    onPress = {
-                        isPressed = true
-                        tryAwaitRelease()
-                        isPressed = false
-                    },
-                    onTap = { onClick() },
-                    onLongPress = { offset -> onLongClick(offset) }
-                )
-            },
+            .clip(shape)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            ),
         shape = shape,
         color = solidCardColor,
         contentColor = Color.White,
@@ -203,20 +211,23 @@ fun ExpressiveLoyaltyCard(
                     }
                 }
 
-                // Favorite Squircle Indicator (Settings style)
+                // Favorite Round Pink Badge with White Border (Miniature replica of add-screen button)
                 if (card.isFavorite) {
                     Surface(
-                        shape = SquircleShape,
-                        color = Color.Black.copy(alpha = 0.22f),
+                        shape = CircleShape,
+                        color = ExpressivePink,
                         contentColor = Color.White,
-                        modifier = Modifier.size(34.dp)
+                        border = BorderStroke(2.dp, Color.White),
+                        tonalElevation = 0.dp,
+                        shadowElevation = 0.dp,
+                        modifier = Modifier.size(28.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                imageVector = Icons.Filled.Favorite,
-                                contentDescription = "Favorite",
-                                tint = ExpressivePink,
-                                modifier = Modifier.size(18.dp)
+                                imageVector = Icons.Rounded.Favorite,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(15.dp)
                             )
                         }
                     }
@@ -225,14 +236,14 @@ fun ExpressiveLoyaltyCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 2. Merchant / Card Title (Space Grotesk Bold with Match Highlight)
+            // 2. Merchant / Card Title (Google Sans Flex Card Title with Match Highlight)
             Text(
                 text = buildHighlightedText(card.title, searchQuery),
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    fontFamily = ManropeFamily,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 23.sp,
-                    lineHeight = 27.sp
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontFamily = GoogleSansFlexCardTitle,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 22.sp,
+                    lineHeight = 26.sp
                 ),
                 color = Color.White,
                 maxLines = 1,
@@ -242,70 +253,13 @@ fun ExpressiveLoyaltyCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 3. Floating White Barcode Island (Concentric 16.dp Radius)
-            Surface(
-                shape = BarcodeIslandShape,
-                color = Color.White,
-                tonalElevation = 0.dp,
-                shadowElevation = 0.dp,
+            // 3. Floating White Barcode Island with Real Scannable Barcode Canvas
+            BarcodeDisplay(
+                value = card.barcodeValue,
+                format = card.barcodeFormat,
+                shape = RoundedCornerShape(18.dp),
                 modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 13.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(
-                            imageVector = if (card.barcodeFormat.is2D) Icons.Default.QrCode2 else Icons.Default.ViewWeek,
-                            contentDescription = null,
-                            tint = Color(0xFF1E1E1E),
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = buildHighlightedText(
-                                text = card.barcodeValue,
-                                query = searchQuery,
-                                highlightColor = Color(0xFFFFD54F),
-                                highlightTextColor = Color(0xFF1B1B1F)
-                            ),
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontFamily = OnestFamily,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 16.sp
-                            ),
-                            color = Color(0xFF1E1E1E),
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFFF1F3F4),
-                        contentColor = Color(0xFF44474F)
-                    ) {
-                        Text(
-                            text = card.barcodeFormat.displayName,
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontFamily = OnestFamily,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 11.sp
-                            ),
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            maxLines = 1,
-                            softWrap = false
-                        )
-                    }
-                }
-            }
+            )
         }
     }
 }
@@ -338,17 +292,18 @@ fun getGroupedShape(
  * Material 3 Expressive Grouped Card Row (Photo 4 Stacked Style)
  * Supports dynamic Pixel UI micro-rounded corner shapes based on position in group.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ExpressiveLoyaltyCardRow(
     card: LoyaltyCard,
     onClick: () -> Unit,
-    onLongClick: (androidx.compose.ui.geometry.Offset) -> Unit = {},
     modifier: Modifier = Modifier,
     searchQuery: String = "",
     index: Int = 0,
     totalCount: Int = 1
 ) {
-    var isPressed by remember { mutableStateOf(false) }
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
 
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.98f else 1f,
@@ -370,17 +325,12 @@ fun ExpressiveLoyaltyCardRow(
         modifier = modifier
             .fillMaxWidth()
             .scale(scale)
-            .pointerInput(card.id) {
-                detectTapGestures(
-                    onPress = {
-                        isPressed = true
-                        tryAwaitRelease()
-                        isPressed = false
-                    },
-                    onTap = { onClick() },
-                    onLongPress = { offset -> onLongClick(offset) }
-                )
-            },
+            .clip(rowShape)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            ),
         shape = rowShape,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         contentColor = MaterialTheme.colorScheme.onSurface,
@@ -445,16 +395,17 @@ fun ExpressiveLoyaltyCardRow(
             ) {
                 if (card.isFavorite) {
                     Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = ExpressivePink.copy(alpha = 0.15f),
-                        modifier = Modifier.size(28.dp)
+                        shape = CircleShape,
+                        color = ExpressivePink,
+                        contentColor = Color.White,
+                        modifier = Modifier.size(26.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                imageVector = Icons.Filled.Favorite,
+                                imageVector = Icons.Rounded.Favorite,
                                 contentDescription = "Favorite",
-                                tint = ExpressivePink,
-                                modifier = Modifier.size(15.dp)
+                                tint = Color.White,
+                                modifier = Modifier.size(14.dp)
                             )
                         }
                     }
@@ -487,11 +438,11 @@ fun ExpressiveLoyaltyCardRow(
 fun ExpressiveLoyaltyCardGrid(
     card: LoyaltyCard,
     onClick: () -> Unit,
-    onLongClick: (androidx.compose.ui.geometry.Offset) -> Unit = {},
     modifier: Modifier = Modifier,
     searchQuery: String = ""
 ) {
-    var isPressed by remember { mutableStateOf(false) }
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
 
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.96f else 1f,
@@ -510,17 +461,12 @@ fun ExpressiveLoyaltyCardGrid(
             .fillMaxWidth()
             .height(130.dp)
             .scale(scale)
-            .pointerInput(card.id) {
-                detectTapGestures(
-                    onPress = {
-                        isPressed = true
-                        tryAwaitRelease()
-                        isPressed = false
-                    },
-                    onTap = { onClick() },
-                    onLongPress = { offset -> onLongClick(offset) }
-                )
-            },
+            .clip(ExpressiveGridCardShape)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            ),
         shape = ExpressiveGridCardShape,
         color = solidCardColor,
         contentColor = Color.White
@@ -556,16 +502,19 @@ fun ExpressiveLoyaltyCardGrid(
 
                 if (card.isFavorite) {
                     Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = Color.Black.copy(alpha = 0.22f),
+                        shape = CircleShape,
+                        color = ExpressivePink,
                         contentColor = Color.White,
+                        border = BorderStroke(2.dp, Color.White),
+                        tonalElevation = 0.dp,
+                        shadowElevation = 0.dp,
                         modifier = Modifier.size(28.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                imageVector = Icons.Filled.Favorite,
+                                imageVector = Icons.Rounded.Favorite,
                                 contentDescription = "Favorite",
-                                tint = ExpressivePink,
+                                tint = Color.White,
                                 modifier = Modifier.size(15.dp)
                             )
                         }
@@ -577,8 +526,8 @@ fun ExpressiveLoyaltyCardGrid(
                 Text(
                     text = buildHighlightedText(card.title, searchQuery),
                     style = MaterialTheme.typography.titleMedium.copy(
-                        fontFamily = ManropeFamily,
-                        fontWeight = FontWeight.Bold,
+                        fontFamily = GoogleSansFlexCardTitle,
+                        fontWeight = FontWeight.SemiBold,
                         fontSize = 17.sp,
                         lineHeight = 20.sp
                     ),
@@ -590,8 +539,10 @@ fun ExpressiveLoyaltyCardGrid(
                 Text(
                     text = buildHighlightedText(card.barcodeValue, searchQuery),
                     style = MaterialTheme.typography.bodySmall.copy(
-                        fontFamily = OnestFamily,
-                        fontWeight = FontWeight.Medium
+                        fontFamily = CardNumberFontFamily,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 13.sp,
+                        letterSpacing = 0.5.sp
                     ),
                     color = Color.White.copy(alpha = 0.85f),
                     maxLines = 1,
@@ -701,7 +652,7 @@ fun M3SegmentedTabGroup(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Wallet,
+                            imageVector = Icons.Rounded.AccountBalanceWallet,
                             contentDescription = null,
                             tint = if (!onlyFavorites) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(16.dp)
@@ -751,7 +702,7 @@ fun M3SegmentedTabGroup(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.Favorite,
+                            imageVector = Icons.Rounded.Favorite,
                             contentDescription = null,
                             tint = favoritesContentColor,
                             modifier = Modifier.size(16.dp)
@@ -863,7 +814,7 @@ fun <T> M3SettingsSegmentedSwitcher(
                 targetValue = if (isSelected)
                     MaterialTheme.colorScheme.onPrimary
                 else
-                    MaterialTheme.colorScheme.onSurfaceVariant,
+                    MaterialTheme.colorScheme.onSurface,
                 animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
                 label = "segmentContentColor"
             )
@@ -894,7 +845,7 @@ fun <T> M3SettingsSegmentedSwitcher(
                         Icon(
                             imageVector = item.icon,
                             contentDescription = item.label,
-                            modifier = Modifier.size(28.dp),
+                            modifier = Modifier.size(22.dp),
                             tint = contentColor
                         )
                         if (showLabels && item.label.isNotBlank()) {
@@ -933,7 +884,7 @@ fun ExpressiveSplitButton(
     primaryColor: Color = MaterialTheme.colorScheme.secondaryContainer,
     primaryContentColor: Color = MaterialTheme.colorScheme.onSecondaryContainer,
     onPrimaryClick: () -> Unit,
-    secondaryIcon: ImageVector = Icons.Default.Add,
+    secondaryIcon: ImageVector = Icons.Rounded.Add,
     secondaryColor: Color = MaterialTheme.colorScheme.primary,
     secondaryContentColor: Color = MaterialTheme.colorScheme.onPrimary,
     onSecondaryClick: () -> Unit,
@@ -1041,11 +992,11 @@ fun M3FloatingToolbarDock(
     ) {
         ExpressiveSplitButton(
             primaryText = stringResource(R.string.scan_action),
-            primaryIcon = Icons.Default.QrCodeScanner,
+            primaryIcon = Icons.Rounded.QrCodeScanner,
             primaryColor = MaterialTheme.colorScheme.secondaryContainer,
             primaryContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
             onPrimaryClick = onScanClick,
-            secondaryIcon = Icons.Default.Add,
+            secondaryIcon = Icons.Rounded.Add,
             secondaryColor = MaterialTheme.colorScheme.primary,
             secondaryContentColor = MaterialTheme.colorScheme.onPrimary,
             onSecondaryClick = onManualClick
@@ -1117,7 +1068,7 @@ fun AnimatedEmptyWalletState(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Outlined.AccountBalanceWallet,
+                        imageVector = Icons.Rounded.AccountBalanceWallet,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(42.dp)
@@ -1133,10 +1084,9 @@ fun AnimatedEmptyWalletState(
                 stringResource(R.string.not_found_title)
             else
                 stringResource(R.string.empty_wallet_title),
-            style = MaterialTheme.typography.headlineLarge.copy(
-                fontFamily = OnestFamily,
-                fontWeight = FontWeight.Black,
-                fontSize = 26.sp
+            style = MaterialTheme.typography.headlineMedium.copy(
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 22.sp
             ),
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
@@ -1160,7 +1110,7 @@ fun AnimatedEmptyWalletState(
 }
 
 /**
- * Category Filter Row with Real-Time Synchronous Swipe Fill & Auto-Center Scrolling
+ * Category Filter Row with Real-Time Synchronous Swipe Fill, Auto-Center Scrolling & Soft Spring Edge Collision
  */
 @Composable
 fun CategoryFilterRow(
@@ -1172,13 +1122,14 @@ fun CategoryFilterRow(
     val listState = rememberLazyListState()
     val density = LocalDensity.current
 
-    // Smoothly scroll to center the active category
+    // Smoothly and gently scroll to center the active category without edge bounce
     LaunchedEffect(selectedCategoryIndex) {
         val layoutInfo = listState.layoutInfo
         val viewportWidth = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset
         val itemInfo = layoutInfo.visibleItemsInfo.find { it.index == selectedCategoryIndex }
         val itemSize = itemInfo?.size ?: with(density) { 90.dp.toPx() }.toInt()
         val centerOffset = -(viewportWidth / 2 - itemSize / 2)
+
         listState.animateScrollToItem(
             index = selectedCategoryIndex,
             scrollOffset = centerOffset
@@ -1198,7 +1149,7 @@ fun CategoryFilterRow(
                 isSelected = isSelected,
                 onClick = { onSelectCategory(null) },
                 label = stringResource(R.string.all_categories),
-                icon = Icons.Default.Apps
+                icon = Icons.Rounded.Apps
             )
         }
 
@@ -1232,24 +1183,24 @@ fun GooglePillChip(
 
     val animatedBg by animateColorAsState(
         targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest,
-        animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing),
         label = "chipBg"
     )
     val animatedContent by animateColorAsState(
         targetValue = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-        animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing),
         label = "chipContent"
     )
 
-    // Smooth subtle elastic pulse from center on selection or repeat click that returns to normal size (120 FPS)
+    // Smooth subtle elastic pulse from center on selection or repeat click that returns to normal size
     val pulseScaleX = remember { Animatable(1f) }
     var clickTrigger by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(isSelected) {
         if (isSelected) {
             pulseScaleX.animateTo(
-                targetValue = 1.08f,
-                animationSpec = tween(durationMillis = 110, easing = FastOutSlowInEasing)
+                targetValue = 1.07f,
+                animationSpec = tween(durationMillis = 150, easing = FastOutSlowInEasing)
             )
             pulseScaleX.animateTo(
                 targetValue = 1.0f,
@@ -1266,8 +1217,8 @@ fun GooglePillChip(
     LaunchedEffect(clickTrigger) {
         if (clickTrigger > 0) {
             pulseScaleX.animateTo(
-                targetValue = 1.08f,
-                animationSpec = tween(durationMillis = 110, easing = FastOutSlowInEasing)
+                targetValue = 1.07f,
+                animationSpec = tween(durationMillis = 150, easing = FastOutSlowInEasing)
             )
             pulseScaleX.animateTo(
                 targetValue = 1.0f,
@@ -1359,7 +1310,7 @@ fun ColorPickerRow(
             ) {
                 if (isSelected) {
                     Icon(
-                        imageVector = Icons.Default.Check,
+                        imageVector = Icons.Rounded.Check,
                         contentDescription = "Selected",
                         tint = Color.White,
                         modifier = Modifier.size(20.dp)
@@ -1389,17 +1340,17 @@ fun getLocalizedCategoryRes(categoryName: String): Int? {
 
 fun getCategoryIcon(iconName: String): ImageVector {
     return when (iconName) {
-        "shopping_cart" -> Icons.Default.ShoppingCart
-        "checkroom" -> Icons.Default.Checkroom
-        "local_pharmacy" -> Icons.Default.LocalPharmacy
-        "local_gas_station" -> Icons.Default.LocalGasStation
-        "restaurant" -> Icons.Default.Restaurant
-        "devices" -> Icons.Default.Devices
-        "sports_esports" -> Icons.Default.SportsEsports
-        "card_giftcard" -> Icons.Default.CardGiftcard
-        "fitness_center" -> Icons.Default.FitnessCenter
-        "local_cafe" -> Icons.Default.LocalCafe
-        else -> Icons.Default.Folder
+        "shopping_cart" -> Icons.Rounded.ShoppingCart
+        "checkroom" -> Icons.Rounded.Checkroom
+        "local_pharmacy" -> Icons.Rounded.LocalPharmacy
+        "local_gas_station" -> Icons.Rounded.LocalGasStation
+        "restaurant" -> Icons.Rounded.Restaurant
+        "devices" -> Icons.Rounded.Devices
+        "sports_esports" -> Icons.Rounded.SportsEsports
+        "card_giftcard" -> Icons.Rounded.CardGiftcard
+        "fitness_center" -> Icons.Rounded.FitnessCenter
+        "local_cafe" -> Icons.Rounded.LocalCafe
+        else -> Icons.Rounded.Folder
     }
 }
 
@@ -1413,7 +1364,7 @@ fun M3ExpressiveSpeedDialFab(
     modifier: Modifier = Modifier
 ) {
     var isExpanded by remember { mutableStateOf(false) }
-    val haptic = LocalHapticFeedback.current
+    val hapticHelper = rememberHapticHelper()
 
     val rotation by animateFloatAsState(
         targetValue = if (isExpanded) 135f else 0f,
@@ -1473,7 +1424,7 @@ fun M3ExpressiveSpeedDialFab(
                     // Item 1: Manual Action Pill
                     Surface(
                         onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            hapticHelper.performClick()
                             isExpanded = false
                             onManualClick()
                         },
@@ -1489,7 +1440,7 @@ fun M3ExpressiveSpeedDialFab(
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.Edit,
+                                imageVector = Icons.Rounded.Edit,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                 modifier = Modifier.size(22.dp)
@@ -1509,7 +1460,7 @@ fun M3ExpressiveSpeedDialFab(
                     // Item 2: Scan Code Action Pill
                     Surface(
                         onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            hapticHelper.performClick()
                             isExpanded = false
                             onScanClick()
                         },
@@ -1525,7 +1476,7 @@ fun M3ExpressiveSpeedDialFab(
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.QrCode2,
+                                imageVector = Icons.Rounded.QrCode2,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                 modifier = Modifier.size(22.dp)
@@ -1547,7 +1498,7 @@ fun M3ExpressiveSpeedDialFab(
             // Primary FAB (Exact Requested Size: 72.dp)
             FloatingActionButton(
                 onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    hapticHelper.performClick()
                     isExpanded = !isExpanded
                 },
                 containerColor = MaterialTheme.colorScheme.primary,
@@ -1556,7 +1507,7 @@ fun M3ExpressiveSpeedDialFab(
                 modifier = Modifier.size(72.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Add,
+                    imageVector = Icons.Rounded.Add,
                     contentDescription = "Add Card",
                     modifier = Modifier
                         .size(34.dp)

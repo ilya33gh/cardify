@@ -17,9 +17,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -205,7 +204,7 @@ fun CameraScannerScreen(
                 verticalArrangement = Arrangement.Center
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.VideocamOff,
+                    imageVector = Icons.Rounded.VideocamOff,
                     contentDescription = null,
                     tint = Color.White,
                     modifier = Modifier.size(64.dp)
@@ -259,7 +258,7 @@ fun CameraScannerScreen(
                 },
                 colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color.Black.copy(alpha = 0.5f))
             ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back", tint = Color.White)
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -274,7 +273,7 @@ fun CameraScannerScreen(
                         )
                     ) {
                         Icon(
-                            imageVector = if (isTorchOn) Icons.Default.FlashOn else Icons.Default.FlashOff,
+                            imageVector = if (isTorchOn) Icons.Rounded.FlashOn else Icons.Rounded.FlashOff,
                             contentDescription = stringResource(R.string.torch_action),
                             tint = Color.White
                         )
@@ -289,7 +288,7 @@ fun CameraScannerScreen(
                     },
                     colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color.Black.copy(alpha = 0.5f))
                 ) {
-                    Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.manual_action), tint = Color.White)
+                    Icon(Icons.Rounded.Edit, contentDescription = stringResource(R.string.manual_action), tint = Color.White)
                 }
             }
         }
@@ -325,7 +324,7 @@ fun CameraScannerScreen(
                     ),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
                 ) {
-                    Icon(Icons.Outlined.PhotoLibrary, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Rounded.PhotoLibrary, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = stringResource(R.string.gallery_action),
@@ -347,7 +346,7 @@ fun CameraScannerScreen(
                     ),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
                 ) {
-                    Icon(Icons.Outlined.FolderOpen, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Rounded.FolderOpen, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = stringResource(R.string.files_action),

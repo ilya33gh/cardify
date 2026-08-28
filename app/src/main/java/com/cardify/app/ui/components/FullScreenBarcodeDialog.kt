@@ -14,10 +14,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.outlined.BrightnessHigh
-import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.rounded.BrightnessHigh
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material3.*
+import com.cardify.app.ui.theme.CardNumberFontFamily
+import com.cardify.app.ui.theme.GoogleSansFlexCardTitle
+import com.cardify.app.ui.theme.OnestFamily
+import com.cardify.app.ui.theme.PillShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,23 +62,13 @@ fun FullScreenBarcodeDialog(
     val context = LocalContext.current
     val view = LocalView.current
     val hapticHelper = rememberHapticHelper()
-    val copiedToastText = stringResource(R.string.copied_toast)
+    val act = context as? Activity
+    val actWindow = act?.window
 
-    // Override screen brightness to 100% while dialog is open
-    DisposableEffect(Unit) {
-        val dialogWindow = (view.parent as? DialogWindowProvider)?.window
-        val act = (context as? Activity)
-        val actWindow = act?.window
+    // Override screen brightness to 100% while dialog is open and restore accurately on dismiss
+    DisposableEffect(actWindow) {
+        val origActBrightness = actWindow?.attributes?.screenBrightness ?: WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
 
-        val origActBrightness = actWindow?.attributes?.screenBrightness
-        val origDialogBrightness = dialogWindow?.attributes?.screenBrightness
-
-        dialogWindow?.let { win ->
-            val lp = win.attributes
-            lp.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_FULL
-            win.attributes = lp
-            androidx.core.view.WindowCompat.setDecorFitsSystemWindows(win, false)
-        }
         actWindow?.let { win ->
             val lp = win.attributes
             lp.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_FULL
@@ -82,35 +76,37 @@ fun FullScreenBarcodeDialog(
         }
 
         onDispose {
-            origDialogBrightness?.let { b ->
-                dialogWindow?.let { win ->
-                    val lp = win.attributes
-                    lp.screenBrightness = b
-                    win.attributes = lp
-                }
-            }
-            origActBrightness?.let { b ->
-                actWindow?.let { win ->
-                    val lp = win.attributes
-                    lp.screenBrightness = b
-                    win.attributes = lp
-                }
+            actWindow?.let { win ->
+                val lp = win.attributes
+                lp.screenBrightness = origActBrightness
+                win.attributes = lp
             }
         }
     }
 
-    var bitmap by remember(card.barcodeValue, card.barcodeFormat) { mutableStateOf<Bitmap?>(null) }
-    var isLoading by remember(card.barcodeValue, card.barcodeFormat) { mutableStateOf(true) }
+    val fullWidth = if (card.barcodeFormat.is2D) 1600 else 2000
+    val fullHeight = if (card.barcodeFormat.is2D) 1600 else 900
+    var bitmap by remember(card.barcodeValue, card.barcodeFormat) {
+        mutableStateOf(BarcodeGenerator.getCachedBitmap(card.barcodeValue, card.barcodeFormat, fullWidth, fullHeight))
+    }
+    var isLoading by remember(card.barcodeValue, card.barcodeFormat) { mutableStateOf(bitmap == null) }
     var errorMessage by remember(card.barcodeValue, card.barcodeFormat) { mutableStateOf<String?>(null) }
+    val copiedToastText = stringResource(R.string.copied_toast)
 
     LaunchedEffect(card.barcodeValue, card.barcodeFormat) {
+        val cached = BarcodeGenerator.getCachedBitmap(card.barcodeValue, card.barcodeFormat, fullWidth, fullHeight)
+        if (cached != null) {
+            bitmap = cached
+            isLoading = false
+            return@LaunchedEffect
+        }
         isLoading = true
         errorMessage = null
         val res = BarcodeGenerator.generateBarcodeBitmap(
             content = card.barcodeValue,
             format = card.barcodeFormat,
-            width = if (card.barcodeFormat.is2D) 1600 else 2000,
-            height = if (card.barcodeFormat.is2D) 1600 else 900
+            width = fullWidth,
+            height = fullHeight
         )
         res.onSuccess {
             bitmap = it
@@ -128,6 +124,26 @@ fun FullScreenBarcodeDialog(
             decorFitsSystemWindows = false
         )
     ) {
+        val dialogView = LocalView.current
+        DisposableEffect(dialogView) {
+            var parent = dialogView.parent
+            var dialogWindow: android.view.Window? = null
+            while (parent != null) {
+                if (parent is DialogWindowProvider) {
+                    dialogWindow = parent.window
+                    break
+                }
+                parent = parent.parent
+            }
+            dialogWindow?.let { win ->
+                val lp = win.attributes
+                lp.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_FULL
+                win.attributes = lp
+                androidx.core.view.WindowCompat.setDecorFitsSystemWindows(win, false)
+            }
+            onDispose { }
+        }
+
         Surface(
             modifier = Modifier
                 .fillMaxSize()
@@ -142,7 +158,8 @@ fun FullScreenBarcodeDialog(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .windowInsetsPadding(WindowInsets.safeDrawing),
+                    .statusBarsPadding()
+                    .navigationBarsPadding(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
@@ -165,7 +182,7 @@ fun FullScreenBarcodeDialog(
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                imageVector = Icons.Default.Close,
+                                imageVector = Icons.Rounded.Close,
                                 contentDescription = "Close",
                                 tint = Color(0xFF1E1E1E),
                                 modifier = Modifier.size(22.dp)
@@ -182,8 +199,8 @@ fun FullScreenBarcodeDialog(
                         Text(
                             text = card.title,
                             style = MaterialTheme.typography.titleLarge.copy(
-                                fontFamily = ManropeFamily,
-                                fontWeight = FontWeight.Black,
+                                fontFamily = GoogleSansFlexCardTitle,
+                                fontWeight = FontWeight.SemiBold,
                                 fontSize = 20.sp
                             ),
                             color = Color.Black,
@@ -217,7 +234,7 @@ fun FullScreenBarcodeDialog(
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.BrightnessHigh,
+                                imageVector = Icons.Rounded.BrightnessHigh,
                                 contentDescription = null,
                                 modifier = Modifier.size(16.dp),
                                 tint = Color(0xFF2E7D32)
@@ -246,10 +263,8 @@ fun FullScreenBarcodeDialog(
                     val availHeight = maxHeight
 
                     if (isLoading) {
-                        CircularProgressIndicator(
-                            color = Color.Black,
-                            strokeWidth = 3.5.dp,
-                            modifier = Modifier.size(48.dp)
+                        ExpressiveMorphLoadingIndicator(
+                            size = 52.dp
                         )
                     } else if (bitmap != null) {
                         if (card.barcodeFormat.is2D) {
@@ -302,9 +317,8 @@ fun FullScreenBarcodeDialog(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .navigationBarsPadding()
                         .padding(horizontal = 20.dp)
-                        .padding(top = 8.dp, bottom = 28.dp),
+                        .padding(top = 8.dp, bottom = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Surface(
@@ -331,17 +345,17 @@ fun FullScreenBarcodeDialog(
                             Text(
                                 text = formatCardNumber(card.barcodeValue, card.barcodeFormat),
                                 style = MaterialTheme.typography.headlineMedium.copy(
-                                    fontFamily = FontFamily.Monospace,
-                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = CardNumberFontFamily,
+                                    fontWeight = FontWeight.SemiBold,
                                     fontSize = if (card.barcodeValue.length > 20) 18.sp else 22.sp,
-                                    letterSpacing = 2.sp
+                                    letterSpacing = 1.5.sp
                                 ),
                                 color = Color.Black,
                                 textAlign = TextAlign.Center
                             )
                             Spacer(modifier = Modifier.width(10.dp))
                             Icon(
-                                imageVector = Icons.Outlined.ContentCopy,
+                                imageVector = Icons.Rounded.ContentCopy,
                                 contentDescription = "Copy",
                                 tint = Color(0xFF555555),
                                 modifier = Modifier.size(20.dp)

@@ -7,7 +7,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,7 +17,8 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
-import com.cardify.app.ui.theme.OnestFamily
+import com.cardify.app.ui.theme.GoogleSansFlexDisplay
+import com.cardify.app.ui.theme.GoogleSansFlexFamily
 
 /**
  * Material 3 Expressive Large Collapsing Header with 120fps fluid morphing.
@@ -101,7 +102,7 @@ fun M3ExpressiveCollapsingHeader(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                             contentDescription = "Назад",
                             tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(22.dp)
@@ -125,8 +126,8 @@ fun M3ExpressiveCollapsingHeader(
             Text(
                 text = title,
                 style = MaterialTheme.typography.displaySmall.copy(
-                    fontFamily = OnestFamily,
-                    fontWeight = if (collapseFraction > 0.6f) FontWeight.Bold else FontWeight.Black,
+                    fontFamily = GoogleSansFlexDisplay,
+                    fontWeight = if (collapseFraction > 0.6f) FontWeight.Medium else FontWeight.SemiBold,
                     fontSize = titleFontSize
                 ),
                 color = MaterialTheme.colorScheme.onSurface,

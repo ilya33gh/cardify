@@ -34,6 +34,7 @@ data class WalletUiState(
     val onlyFavorites: Boolean = false,
     val searchQuery: String = "",
     val sortOrder: SortOrder = SortOrder.DATE_ADDED,
+    val isSortAscending: Boolean = false,
     val layoutMode: LayoutMode = LayoutMode.FULL_CARDS,
     val selectedCardForDetail: LoyaltyCard? = null,
     val isLoading: Boolean = false
@@ -44,8 +45,62 @@ private data class FilterState(
     val onlyFavorites: Boolean = false,
     val searchQuery: String = "",
     val sortOrder: SortOrder = SortOrder.DATE_ADDED,
+    val isSortAscending: Boolean = false,
     val layoutMode: LayoutMode = LayoutMode.FULL_CARDS
 )
+
+fun compareCardsAlphabetical(a: LoyaltyCard, b: LoyaltyCard, isAscending: Boolean): Int {
+    val s1 = a.title.trim()
+    val s2 = b.title.trim()
+    if (s1.isEmpty() && s2.isEmpty()) return 0
+    if (s1.isEmpty()) return if (isAscending) 1 else -1
+    if (s2.isEmpty()) return if (isAscending) -1 else 1
+
+    val c1 = s1.first()
+    val c2 = s2.first()
+
+    val isLatin1 = (c1 in 'A'..'Z' || c1 in 'a'..'z')
+    val isLatin2 = (c2 in 'A'..'Z' || c2 in 'a'..'z')
+    val isCyrillic1 = (c1 in '\u0400'..'\u04FF')
+    val isCyrillic2 = (c2 in '\u0400'..'\u04FF')
+
+    // Latin vs Cyrillic grouping: Latin always stays grouped before Cyrillic in A-Z
+    val scriptGroup = when {
+        isLatin1 && isCyrillic2 -> -1
+        isCyrillic1 && isLatin2 -> 1
+        else -> 0
+    }
+
+    val collator = java.text.Collator.getInstance(java.util.Locale.forLanguageTag("ru-RU")).apply {
+        strength = java.text.Collator.PRIMARY
+    }
+    val titleCmp = collator.compare(s1, s2)
+
+    val finalCmp = if (scriptGroup != 0) scriptGroup else titleCmp
+    return if (isAscending) finalCmp else -finalCmp
+}
+
+fun sortCardsList(cards: List<LoyaltyCard>, sortOrder: SortOrder, isSortAscending: Boolean): List<LoyaltyCard> {
+    return cards.sortedWith { a, b ->
+        if (a.isFavorite != b.isFavorite) {
+            return@sortedWith if (a.isFavorite) -1 else 1
+        }
+        when (sortOrder) {
+            SortOrder.ALPHABETICAL -> compareCardsAlphabetical(a, b, isSortAscending)
+            SortOrder.DATE_ADDED -> {
+                val cmp = a.createdAt.compareTo(b.createdAt)
+                if (isSortAscending) cmp else -cmp
+            }
+            SortOrder.FREQUENCY -> {
+                val countCmp = a.useCount.compareTo(b.useCount)
+                val lastUsedCmp = a.lastUsedAt.compareTo(b.lastUsedAt)
+                val createdCmp = a.createdAt.compareTo(b.createdAt)
+                val cmp = if (countCmp != 0) countCmp else if (lastUsedCmp != 0) lastUsedCmp else createdCmp
+                if (isSortAscending) cmp else -cmp
+            }
+        }
+    }
+}
 
 class WalletViewModel(
     private val cardRepository: CardRepository,
@@ -62,17 +117,22 @@ class WalletViewModel(
     private val _onlyFavorites = MutableStateFlow(false)
     private val _searchQuery = MutableStateFlow("")
     private val _sortOrder = MutableStateFlow(SortOrder.DATE_ADDED)
+    private val _isSortAscending = MutableStateFlow(false)
     private val _layoutMode = MutableStateFlow(initialLayoutMode)
     private val _selectedCardForDetail = MutableStateFlow<LoyaltyCard?>(null)
+
+    private val sortState = combine(_sortOrder, _isSortAscending) { order, asc ->
+        order to asc
+    }
 
     private val filterState: Flow<FilterState> = combine(
         _selectedCategoryId,
         _onlyFavorites,
         _searchQuery,
-        _sortOrder,
+        sortState,
         _layoutMode
-    ) { categoryId, onlyFav, query, sort, layout ->
-        FilterState(categoryId, onlyFav, query, sort, layout)
+    ) { categoryId, onlyFav, query, (sort, ascending), layout ->
+        FilterState(categoryId, onlyFav, query, sort, ascending, layout)
     }
 
     val uiState: StateFlow<WalletUiState> = combine(
@@ -81,6 +141,10 @@ class WalletViewModel(
         filterState,
         _selectedCardForDetail
     ) { allCards, categories, filter, detailCard ->
+        allCards.forEach { card ->
+            com.cardify.app.barcode.BarcodeGenerator.preloadBarcode(card.barcodeValue, card.barcodeFormat)
+        }
+
         val favCount = allCards.count { it.isFavorite }
 
         // Cards matching search query (unrestricted by favorite tab for smooth transition scenes)
@@ -102,16 +166,8 @@ class WalletViewModel(
             filter.selectedCategoryId == null || card.categoryId == filter.selectedCategoryId
         }
 
-        // Apply Sorting
-        val sortedCards = when (filter.sortOrder) {
-            SortOrder.ALPHABETICAL -> categoryFiltered.sortedBy { it.title.lowercase() }
-            SortOrder.DATE_ADDED -> categoryFiltered.sortedByDescending { it.createdAt }
-            SortOrder.FREQUENCY -> categoryFiltered.sortedWith(
-                compareByDescending<LoyaltyCard> { it.useCount }
-                    .thenByDescending { it.lastUsedAt }
-                    .thenByDescending { it.createdAt }
-            )
-        }
+        // Apply Sorting with Favorites Pinned to Top
+        val sortedCards = sortCardsList(categoryFiltered, filter.sortOrder, filter.isSortAscending)
 
         val currentDetail = detailCard?.let { dc -> allCards.find { it.id == dc.id } }
 
@@ -125,6 +181,7 @@ class WalletViewModel(
             onlyFavorites = filter.onlyFavorites,
             searchQuery = filter.searchQuery,
             sortOrder = filter.sortOrder,
+            isSortAscending = filter.isSortAscending,
             layoutMode = filter.layoutMode,
             selectedCardForDetail = currentDetail
         )
@@ -148,6 +205,20 @@ class WalletViewModel(
 
     fun setSortOrder(order: SortOrder) {
         _sortOrder.value = order
+        // Set natural default direction for each sort type
+        if (order == SortOrder.ALPHABETICAL) {
+            _isSortAscending.value = true // A-Z by default
+        } else {
+            _isSortAscending.value = false // Newest / Most used first by default
+        }
+    }
+
+    fun toggleSortDirection() {
+        _isSortAscending.value = !_isSortAscending.value
+    }
+
+    fun setSortAscending(ascending: Boolean) {
+        _isSortAscending.value = ascending
     }
 
     fun setLayoutMode(mode: LayoutMode, context: Context? = null) {

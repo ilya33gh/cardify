@@ -22,13 +22,14 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.outlined.OpenInNew
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
+import com.cardify.app.ui.theme.GoogleSansFlexSlantedBadge
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.zIndex
@@ -53,7 +54,7 @@ import androidx.compose.ui.unit.sp
 import com.cardify.app.R
 import com.cardify.app.data.local.ThemeMode
 import com.cardify.app.domain.model.CardCategory
-import com.cardify.app.domain.model.CardColorPalette
+import com.cardify.app.ui.components.*
 import com.cardify.app.ui.components.M3SettingsSegmentedSwitcher
 import com.cardify.app.ui.components.SegmentItem
 import com.cardify.app.ui.components.getCategoryIcon
@@ -175,10 +176,7 @@ fun SettingsScreen(
                 Column {
                     Text(
                         text = stringResource(R.string.theme_section_title),
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
-                        ),
+                        style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(start = 14.dp, bottom = 4.dp)
                     )
@@ -186,10 +184,10 @@ fun SettingsScreen(
 
                     val themeItems = remember {
                         listOf(
-                            SegmentItem(ThemeMode.AUTO, "Auto", Icons.Outlined.BrightnessAuto),
-                            SegmentItem(ThemeMode.LIGHT, "Light", Icons.Outlined.LightMode),
-                            SegmentItem(ThemeMode.DARK, "Dark", Icons.Outlined.DarkMode),
-                            SegmentItem(ThemeMode.OLED, "OLED", Icons.Outlined.Contrast)
+                            SegmentItem(ThemeMode.AUTO, "Auto", Icons.Rounded.BrightnessAuto),
+                            SegmentItem(ThemeMode.LIGHT, "Light", Icons.Rounded.LightMode),
+                            SegmentItem(ThemeMode.DARK, "Dark", Icons.Rounded.DarkMode),
+                            SegmentItem(ThemeMode.OLED, "OLED", Icons.Rounded.Contrast)
                         )
                     }
 
@@ -222,28 +220,23 @@ fun SettingsScreen(
                                 .padding(horizontal = 16.dp, vertical = 14.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            FilledIconButton(
-                                onClick = {
-                                    if (isSupported) {
-                                        hapticHelper.performClick()
-                                        viewModel.setDynamicColorEnabled(context, !uiState.isDynamicColorEnabled)
-                                    }
-                                },
-                                shape = SquircleShape,
-                                colors = IconButtonDefaults.filledIconButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(40.dp)
                             ) {
-                                Icon(Icons.Outlined.Palette, contentDescription = null)
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Rounded.Palette, contentDescription = null, modifier = Modifier.size(22.dp))
+                                }
                             }
                             Spacer(modifier = Modifier.width(16.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = stringResource(R.string.dynamic_color_title),
                                     style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 17.sp
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 16.sp
                                     ),
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
@@ -294,28 +287,23 @@ fun SettingsScreen(
                                 .padding(horizontal = 16.dp, vertical = 14.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            FilledIconButton(
-                                onClick = {
-                                    if (!uiState.isHapticEnabled) {
-                                        hapticHelper.performClick()
-                                    }
-                                    viewModel.setHapticEnabled(context, !uiState.isHapticEnabled)
-                                },
-                                shape = SquircleShape,
-                                colors = IconButtonDefaults.filledIconButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                                )
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(40.dp)
                             ) {
-                                Icon(Icons.Outlined.Vibration, contentDescription = null)
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Rounded.Vibration, contentDescription = null, modifier = Modifier.size(22.dp))
+                                }
                             }
                             Spacer(modifier = Modifier.width(16.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = stringResource(R.string.haptic_feedback_title),
                                     style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 17.sp
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 16.sp
                                     ),
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
@@ -348,10 +336,7 @@ fun SettingsScreen(
                 Column {
                     Text(
                         text = stringResource(R.string.language_section_title),
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
-                        ),
+                        style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(start = 14.dp, bottom = 4.dp)
                     )
@@ -359,7 +344,7 @@ fun SettingsScreen(
 
                     val langItems = remember {
                         listOf(
-                            SegmentItem("system", "AUTO", Icons.Outlined.Language),
+                            SegmentItem("system", "AUTO", Icons.Rounded.Language),
                             SegmentItem("ru", "RU"),
                             SegmentItem("en", "EN")
                         )
@@ -379,23 +364,38 @@ fun SettingsScreen(
                 Column {
                     Text(
                         text = stringResource(R.string.security_section_title),
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
-                        ),
+                        style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(start = 14.dp, bottom = 4.dp)
                     )
                     Spacer(modifier = Modifier.height(10.dp))
 
                     Column {
+                        val appSecurityBottomCorner by animateDpAsState(
+                            targetValue = if (uiState.isBiometricEnabled) 24.dp else 6.dp,
+                            animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing),
+                            label = "appSecurityBottomCorner"
+                        )
+                        val recentAppsTopCorner by animateDpAsState(
+                            targetValue = if (uiState.isBiometricEnabled) 24.dp else 6.dp,
+                            animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing),
+                            label = "recentAppsTopCorner"
+                        )
+
                         // Biometric App Lock Block (Top Item)
+                        val appLockShape = RoundedCornerShape(
+                            topStart = 24.dp,
+                            topEnd = 24.dp,
+                            bottomStart = appSecurityBottomCorner,
+                            bottomEnd = appSecurityBottomCorner
+                        )
+
                         Surface(
                             onClick = {
                                 hapticHelper.performClick()
                                 viewModel.setBiometricEnabled(context, !uiState.isBiometricEnabled)
                             },
-                            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 6.dp, bottomEnd = 6.dp),
+                            shape = appLockShape,
                             color = MaterialTheme.colorScheme.surfaceContainerHighest,
                             border = null,
                             modifier = Modifier.fillMaxWidth()
@@ -406,15 +406,15 @@ fun SettingsScreen(
                                     .padding(horizontal = 16.dp, vertical = 14.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                FilledIconButton(
-                                    onClick = {
-                                        hapticHelper.performClick()
-                                        viewModel.setBiometricEnabled(context, !uiState.isBiometricEnabled)
-                                    },
-                                    shape = SquircleShape,
-                                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(40.dp)
                                 ) {
-                                    Icon(Icons.Outlined.Fingerprint, contentDescription = null)
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Rounded.Fingerprint, contentDescription = null, modifier = Modifier.size(22.dp))
+                                    }
                                 }
                                 Spacer(modifier = Modifier.width(16.dp))
                                 Column(modifier = Modifier.weight(1f)) {
@@ -445,60 +445,55 @@ fun SettingsScreen(
                             }
                         }
 
-                        // Lock Timeout Selector with 0-Jerk Continuous Expansion
+                        // Auto-lock Timeout Styled in Theme Mode / Language Switcher Style
                         AnimatedVisibility(
                             visible = uiState.isBiometricEnabled,
                             enter = expandVertically(animationSpec = tween(280, easing = FastOutSlowInEasing)) + fadeIn(animationSpec = tween(280)),
                             exit = shrinkVertically(animationSpec = tween(280, easing = FastOutSlowInEasing)) + fadeOut(animationSpec = tween(280))
                         ) {
-                            Column {
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Surface(
-                                    shape = RoundedCornerShape(6.dp),
-                                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                    border = null,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Column(
-                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally
-                                    ) {
-                                        Text(
-                                            text = stringResource(R.string.lock_timeout_title),
-                                            style = MaterialTheme.typography.titleMedium.copy(
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 16.sp
-                                            ),
-                                            textAlign = TextAlign.Center,
-                                            modifier = Modifier.fillMaxWidth(),
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        val timeoutItems = listOf(
-                                            SegmentItem(0, stringResource(R.string.lock_timeout_immediately)),
-                                            SegmentItem(60, stringResource(R.string.lock_timeout_1min)),
-                                            SegmentItem(300, stringResource(R.string.lock_timeout_5min))
-                                        )
-                                        M3SettingsSegmentedSwitcher(
-                                            items = timeoutItems,
-                                            selectedValue = uiState.lockTimeoutSeconds,
-                                            showLabels = true,
-                                            onSelect = { viewModel.setLockTimeoutSeconds(context, it) }
-                                        )
-                                    }
-                                }
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 10.dp, bottom = 8.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.lock_timeout_title),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(start = 14.dp, bottom = 8.dp)
+                                )
+
+                                val timeoutItems = listOf(
+                                    SegmentItem(0, stringResource(R.string.lock_timeout_immediately), Icons.Rounded.Bolt),
+                                    SegmentItem(60, stringResource(R.string.lock_timeout_1min), Icons.Rounded.Timer),
+                                    SegmentItem(300, stringResource(R.string.lock_timeout_5min), Icons.Rounded.HourglassBottom)
+                                )
+
+                                M3SettingsSegmentedSwitcher(
+                                    items = timeoutItems,
+                                    selectedValue = uiState.lockTimeoutSeconds,
+                                    showLabels = true,
+                                    onSelect = { viewModel.setLockTimeoutSeconds(context, it) }
+                                )
                             }
                         }
 
                         Spacer(modifier = Modifier.height(2.dp))
 
-                        // Flag Secure Protection Block (Middle Item)
+                        // Flag Secure Protection Block (Bottom Item)
+                        val recentAppsShape = RoundedCornerShape(
+                            topStart = recentAppsTopCorner,
+                            topEnd = recentAppsTopCorner,
+                            bottomStart = 24.dp,
+                            bottomEnd = 24.dp
+                        )
+
                         Surface(
                             onClick = {
                                 hapticHelper.performClick()
                                 viewModel.setFlagSecureEnabled(context, !uiState.isFlagSecureEnabled)
                             },
-                            shape = RoundedCornerShape(6.dp),
+                            shape = recentAppsShape,
                             color = MaterialTheme.colorScheme.surfaceContainerHighest,
                             border = null,
                             modifier = Modifier.fillMaxWidth()
@@ -509,23 +504,23 @@ fun SettingsScreen(
                                     .padding(horizontal = 16.dp, vertical = 14.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                FilledIconButton(
-                                    onClick = {
-                                        hapticHelper.performClick()
-                                        viewModel.setFlagSecureEnabled(context, !uiState.isFlagSecureEnabled)
-                                    },
-                                    shape = SquircleShape,
-                                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(40.dp)
                                 ) {
-                                    Icon(Icons.Outlined.VisibilityOff, contentDescription = null)
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Rounded.VisibilityOff, contentDescription = null, modifier = Modifier.size(22.dp))
+                                    }
                                 }
                                 Spacer(modifier = Modifier.width(16.dp))
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = stringResource(R.string.recent_apps_title),
                                         style = MaterialTheme.typography.titleMedium.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 17.sp
+                                            fontWeight = FontWeight.SemiBold,
+                                            fontSize = 16.sp
                                         )
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
@@ -547,64 +542,6 @@ fun SettingsScreen(
                                 )
                             }
                         }
-
-                        Spacer(modifier = Modifier.height(2.dp))
-
-                        // Privacy Mode Block (Bottom Item)
-                        Surface(
-                            onClick = {
-                                hapticHelper.performClick()
-                                viewModel.setPrivacyModeEnabled(context, !uiState.isPrivacyModeEnabled)
-                            },
-                            shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp, bottomStart = 24.dp, bottomEnd = 24.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            border = null,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                FilledIconButton(
-                                    onClick = {
-                                        hapticHelper.performClick()
-                                        viewModel.setPrivacyModeEnabled(context, !uiState.isPrivacyModeEnabled)
-                                    },
-                                    shape = SquircleShape,
-                                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.tertiary)
-                                ) {
-                                    Icon(Icons.Outlined.Lock, contentDescription = null)
-                                }
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = stringResource(R.string.privacy_mode_title),
-                                        style = MaterialTheme.typography.titleMedium.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 17.sp
-                                        )
-                                    )
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = stringResource(R.string.privacy_mode_subtitle),
-                                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Switch(
-                                    checked = uiState.isPrivacyModeEnabled,
-                                    onCheckedChange = {
-                                        hapticHelper.performClick()
-                                        viewModel.setPrivacyModeEnabled(context, it)
-                                    }
-                                )
-                            }
-                        }
                     }
                 }
             }
@@ -614,10 +551,7 @@ fun SettingsScreen(
                 Column {
                     Text(
                         text = stringResource(R.string.backup_section_title),
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
-                        ),
+                        style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(start = 14.dp, bottom = 4.dp)
                     )
@@ -641,23 +575,23 @@ fun SettingsScreen(
                                     .padding(horizontal = 16.dp, vertical = 14.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                FilledIconButton(
-                                    onClick = {
-                                        val timestamp = System.currentTimeMillis()
-                                        exportLauncher.launch("cardify_backup_$timestamp.json")
-                                    },
-                                    shape = SquircleShape,
-                                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(40.dp)
                                 ) {
-                                    Icon(Icons.Outlined.FileUpload, contentDescription = null)
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Rounded.FileUpload, contentDescription = null, modifier = Modifier.size(22.dp))
+                                    }
                                 }
                                 Spacer(modifier = Modifier.width(16.dp))
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = stringResource(R.string.export_json_title),
                                         style = MaterialTheme.typography.titleMedium.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 17.sp
+                                            fontWeight = FontWeight.SemiBold,
+                                            fontSize = 16.sp
                                         )
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
@@ -688,22 +622,23 @@ fun SettingsScreen(
                                     .padding(horizontal = 16.dp, vertical = 14.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                FilledIconButton(
-                                    onClick = {
-                                        importLauncher.launch(arrayOf("application/json", "*/*"))
-                                    },
-                                    shape = SquircleShape,
-                                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(40.dp)
                                 ) {
-                                    Icon(Icons.Outlined.FileDownload, contentDescription = null)
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Rounded.FileDownload, contentDescription = null, modifier = Modifier.size(22.dp))
+                                    }
                                 }
                                 Spacer(modifier = Modifier.width(16.dp))
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = stringResource(R.string.import_json_title),
                                         style = MaterialTheme.typography.titleMedium.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 17.sp
+                                            fontWeight = FontWeight.SemiBold,
+                                            fontSize = 16.sp
                                         )
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
@@ -731,10 +666,7 @@ fun SettingsScreen(
                     ) {
                         Text(
                             text = stringResource(R.string.categories_section_title),
-                            style = MaterialTheme.typography.titleSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
-                            ),
+                            style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(start = 14.dp)
                         )
@@ -745,14 +677,11 @@ fun SettingsScreen(
                             colors = ButtonDefaults.filledTonalButtonColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = stringResource(R.string.add_category_action),
-                                fontWeight = FontWeight.Black,
-                                fontSize = 15.sp,
-                                maxLines = 1,
-                                softWrap = false
+                                style = MaterialTheme.typography.labelLarge
                             )
                         }
                     }
@@ -844,108 +773,109 @@ fun SettingsScreen(
 
             // App About Section
             item(key = "about_section", contentType = "about_card") {
-                Surface(
-                    shape = ExpressiveCardShape,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    border = null,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                Column {
+                    Surface(
+                        shape = RoundedCornerShape(24.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        border = null,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = "Cardify",
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontFamily = ManropeFamily,
-                                fontWeight = FontWeight.Black,
-                                fontSize = 24.sp
-                            ),
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        Surface(
-                            shape = PillShape,
-                            color = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        Column(
+                            modifier = Modifier.padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "v1.0.0-beta.2",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontFamily = OnestFamily,
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 11.sp
+                                text = "Cardify",
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 24.sp
                                 ),
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
-                        }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
 
-                        Text(
-                            text = "Ultra-Expressive M3 • Offline-First",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                        )
+                            Surface(
+                                shape = PillShape,
+                                color = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            ) {
+                                Text(
+                                    text = "v${com.cardify.app.BuildConfig.VERSION_NAME.removePrefix("v")}",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontFamily = GoogleSansFlexSlantedBadge,
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 11.sp
+                                    ),
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                                )
+                            }
 
-                        Spacer(modifier = Modifier.height(14.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
 
-                        // GitHub Repository Link Button
-                        Surface(
-                            onClick = {
-                                hapticHelper.performClick()
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/ilya33gh/cardify"))
-                                try {
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                }
-                            },
-                            shape = PillShape,
-                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
-                            contentColor = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.fillMaxWidth(0.92f)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
+                            Text(
+                                text = "Ultra-Expressive M3 • Offline-First",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                            )
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            // GitHub Repository Link Button
+                            Surface(
+                                onClick = {
+                                    hapticHelper.performClick()
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/ilya33gh/cardify"))
+                                    try {
+                                        context.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, "Could not open browser", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.surface,
+                                border = null,
+                                modifier = Modifier.fillMaxWidth()
                             ) {
                                 Row(
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    modifier = Modifier.weight(1f)
+                                    horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Code,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                        Text(
+                                            text = "github.com/ilya33gh/cardify",
+                                            style = MaterialTheme.typography.labelMedium.copy(
+                                                fontFamily = GoogleSansFlexDisplay,
+                                                fontWeight = FontWeight.SemiBold
+                                            ),
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
                                     Icon(
-                                        imageVector = Icons.Outlined.Code,
+                                        imageVector = Icons.AutoMirrored.Rounded.OpenInNew,
                                         contentDescription = null,
-                                        modifier = Modifier.size(18.dp),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                    Text(
-                                        text = "github.com/ilya33gh/cardify",
-                                        style = MaterialTheme.typography.labelMedium.copy(
-                                            fontFamily = OnestFamily,
-                                            fontWeight = FontWeight.Bold
-                                        ),
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
                             }
                         }
                     }
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
-                Spacer(modifier = Modifier.height(24.dp))
             }
         }
 
@@ -1002,14 +932,16 @@ fun SettingsScreen(
                     ) {
                         iconsList.take(5).forEach { iconName ->
                             val isSelected = selectedIcon == iconName
-                            FilledIconButton(
+                            Surface(
                                 onClick = { selectedIcon = iconName },
-                                shape = SquircleShape,
-                                colors = IconButtonDefaults.filledIconButtonColors(
-                                    containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh
-                                )
+                                shape = CircleShape,
+                                color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                                contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(40.dp)
                             ) {
-                                Icon(getCategoryIcon(iconName), contentDescription = null)
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(getCategoryIcon(iconName), contentDescription = null, modifier = Modifier.size(22.dp))
+                                }
                             }
                         }
                     }
@@ -1087,14 +1019,16 @@ fun SettingsScreen(
                     ) {
                         iconsList.take(5).forEach { iconName ->
                             val isSelected = selectedIcon == iconName
-                            FilledIconButton(
+                            Surface(
                                 onClick = { selectedIcon = iconName },
-                                shape = SquircleShape,
-                                colors = IconButtonDefaults.filledIconButtonColors(
-                                    containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh
-                                )
+                                shape = CircleShape,
+                                color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                                contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(40.dp)
                             ) {
-                                Icon(getCategoryIcon(iconName), contentDescription = null)
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(getCategoryIcon(iconName), contentDescription = null, modifier = Modifier.size(22.dp))
+                                }
                             }
                         }
                     }
@@ -1327,20 +1261,20 @@ private fun M3SwipeableCategoryRow(
                         .weight(1f)
                         .clipToBounds()
                 ) {
-                    val catColor = CardColorPalette.getHarmonizedColor(category.colorHex)
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(SquircleShape)
-                            .background(catColor),
-                        contentAlignment = Alignment.Center
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(40.dp)
                     ) {
-                        Icon(
-                            imageVector = getCategoryIcon(category.iconName),
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(22.dp)
-                        )
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = getCategoryIcon(category.iconName),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
                     }
 
                     val localizedRes = getLocalizedCategoryRes(category.name)
@@ -1349,8 +1283,8 @@ private fun M3SwipeableCategoryRow(
                     Text(
                         text = displayName,
                         style = MaterialTheme.typography.bodyLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 17.sp
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 16.sp
                         ),
                         maxLines = 1,
                         softWrap = false,
@@ -1382,7 +1316,7 @@ private fun M3SwipeableCategoryRow(
                         modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.DragHandle,
+                            imageVector = Icons.Rounded.DragHandle,
                             contentDescription = "Изменить порядок или открыть действия",
                             tint = if (isDragging) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -1425,7 +1359,7 @@ private fun M3SwipeableCategoryRow(
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                imageVector = Icons.Outlined.Edit,
+                                imageVector = Icons.Rounded.Edit,
                                 contentDescription = "Изменить",
                                 modifier = Modifier.size(22.dp)
                             )
@@ -1444,7 +1378,7 @@ private fun M3SwipeableCategoryRow(
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                imageVector = Icons.Outlined.Delete,
+                                imageVector = Icons.Rounded.Delete,
                                 contentDescription = "Удалить",
                                 modifier = Modifier.size(22.dp)
                             )

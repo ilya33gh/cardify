@@ -2,29 +2,35 @@ package com.cardify.app.ui.screens.addedit
 
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.outlined.Notes
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.Notes
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import com.cardify.app.R
 import com.cardify.app.data.local.entities.BarcodeFormatEnum
 import com.cardify.app.domain.model.CardColorPalette
@@ -32,15 +38,16 @@ import com.cardify.app.ui.components.AnimatedFavoriteIconButton
 import com.cardify.app.ui.components.BarcodeDisplay
 import com.cardify.app.ui.components.ColorPickerRow
 import com.cardify.app.ui.components.GooglePillChip
+import com.cardify.app.ui.components.M3ExpressiveCollapsingHeader
 import com.cardify.app.ui.components.getCategoryIcon
 import com.cardify.app.ui.components.getLocalizedCategoryRes
 import com.cardify.app.ui.components.rememberHapticHelper
 import com.cardify.app.ui.theme.ExpressiveButtonShape
+import com.cardify.app.ui.theme.GoogleSansFlexCardTitle
+import com.cardify.app.ui.theme.GoogleSansFlexSlantedHint
 import com.cardify.app.ui.theme.MaterialThemeAdaptive
 import com.cardify.app.ui.theme.ManropeFamily
 import com.cardify.app.ui.theme.OnestFamily
-import androidx.compose.ui.platform.LocalDensity
-import com.cardify.app.ui.components.M3ExpressiveCollapsingHeader
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,9 +67,14 @@ fun AddEditCardScreen(
         }
     }
 
-    LaunchedEffect(uiState.errorMessage) {
-        uiState.errorMessage?.let { msg ->
-            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+    val hapticHelper = rememberHapticHelper()
+
+    LaunchedEffect(uiState.errorTimestamp) {
+        if (uiState.errorTimestamp > 0L) {
+            uiState.errorMessage?.let { msg ->
+                hapticHelper.performDestructiveWarning()
+                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -80,6 +92,7 @@ fun AddEditCardScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .imePadding()
     ) {
         val adaptiveHorizontalPadding = windowSizeInfo.horizontalPadding
 
@@ -124,7 +137,7 @@ fun AddEditCardScreen(
                         uiState = uiState,
                         viewModel = viewModel
                     )
-                    Spacer(modifier = Modifier.height(100.dp))
+                    Spacer(modifier = Modifier.height(140.dp))
                 }
             }
         } else {
@@ -159,7 +172,7 @@ fun AddEditCardScreen(
                         viewModel = viewModel
                     )
 
-                    Spacer(modifier = Modifier.height(100.dp))
+                    Spacer(modifier = Modifier.height(160.dp))
                 }
             }
         }
@@ -183,7 +196,6 @@ fun AddEditCardScreen(
         )
 
         // Floating Action Button
-        val hapticHelper = rememberHapticHelper()
         LargeFloatingActionButton(
             onClick = {
                 hapticHelper.performHeavyClick()
@@ -199,7 +211,7 @@ fun AddEditCardScreen(
                 .size(68.dp)
         ) {
             Icon(
-                imageVector = Icons.Default.Check,
+                imageVector = Icons.Rounded.Check,
                 contentDescription = if (uiState.cardId > 0)
                     stringResource(R.string.save_action)
                 else
@@ -232,8 +244,8 @@ private fun CardPreviewCard(
             Text(
                 text = title.ifBlank { stringResource(R.string.card_preview_title) },
                 style = MaterialTheme.typography.titleMedium.copy(
-                    fontFamily = ManropeFamily,
-                    fontWeight = FontWeight.Black,
+                    fontFamily = GoogleSansFlexCardTitle,
+                    fontWeight = FontWeight.SemiBold,
                     fontSize = 18.sp
                 ),
                 color = Color.White,
@@ -254,23 +266,42 @@ private fun CardPreviewCard(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun CardFormInputs(
     uiState: AddEditCardUiState,
     viewModel: AddEditCardViewModel
 ) {
     var isFormatDropdownOpen by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+    val titleRequester = remember { BringIntoViewRequester() }
+    val barcodeRequester = remember { BringIntoViewRequester() }
+    val notesRequester = remember { BringIntoViewRequester() }
 
     // Card Title Field
     OutlinedTextField(
         value = uiState.title,
         onValueChange = { viewModel.onTitleChanged(it) },
         label = { Text(stringResource(R.string.card_title_label)) },
-        placeholder = { Text(stringResource(R.string.card_title_placeholder)) },
+        placeholder = {
+            Text(
+                stringResource(R.string.card_title_placeholder),
+                style = MaterialTheme.typography.bodyMedium.copy(fontFamily = GoogleSansFlexSlantedHint)
+            )
+        },
         singleLine = true,
         shape = ExpressiveButtonShape,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .bringIntoViewRequester(titleRequester)
+            .onFocusEvent { focusState ->
+                if (focusState.isFocused) {
+                    coroutineScope.launch {
+                        delay(120)
+                        titleRequester.bringIntoView()
+                    }
+                }
+            }
     )
 
     // Barcode Number / Value Field
@@ -278,10 +309,25 @@ private fun CardFormInputs(
         value = uiState.barcodeValue,
         onValueChange = { viewModel.onBarcodeValueChanged(it) },
         label = { Text(stringResource(R.string.card_code_label)) },
-        placeholder = { Text(stringResource(R.string.card_code_placeholder)) },
+        placeholder = {
+            Text(
+                stringResource(R.string.card_code_placeholder),
+                style = MaterialTheme.typography.bodyMedium.copy(fontFamily = GoogleSansFlexSlantedHint)
+            )
+        },
         singleLine = true,
         shape = ExpressiveButtonShape,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .bringIntoViewRequester(barcodeRequester)
+            .onFocusEvent { focusState ->
+                if (focusState.isFocused) {
+                    coroutineScope.launch {
+                        delay(120)
+                        barcodeRequester.bringIntoView()
+                    }
+                }
+            }
     )
 
     // Barcode Format Dropdown
@@ -388,11 +434,26 @@ private fun CardFormInputs(
         value = uiState.notes,
         onValueChange = { viewModel.onNotesChanged(it) },
         label = { Text(stringResource(R.string.note_optional_label)) },
-        placeholder = { Text(stringResource(R.string.note_placeholder)) },
-        leadingIcon = { Icon(Icons.AutoMirrored.Outlined.Notes, contentDescription = null) },
+        placeholder = {
+            Text(
+                stringResource(R.string.note_placeholder),
+                style = MaterialTheme.typography.bodyMedium.copy(fontFamily = GoogleSansFlexSlantedHint)
+            )
+        },
+        leadingIcon = { Icon(Icons.AutoMirrored.Rounded.Notes, contentDescription = null) },
         minLines = 2,
         maxLines = 4,
         shape = ExpressiveButtonShape,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .bringIntoViewRequester(notesRequester)
+            .onFocusEvent { focusState ->
+                if (focusState.isFocused) {
+                    coroutineScope.launch {
+                        delay(120)
+                        notesRequester.bringIntoView()
+                    }
+                }
+            }
     )
 }

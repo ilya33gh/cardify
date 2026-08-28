@@ -150,9 +150,8 @@ fun ExpressiveBrightnessSlider(
         Text(
             text = stringResource(R.string.brightness_label),
             style = MaterialTheme.typography.titleMedium.copy(
-                fontFamily = ManropeFamily,
-                fontWeight = FontWeight.Bold,
-                fontSize = 20.sp
+                fontWeight = FontWeight.Medium,
+                fontSize = 18.sp
             ),
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(start = 2.dp, top = 8.dp, bottom = 2.dp)
@@ -195,9 +194,8 @@ fun ExpressiveBrightnessSlider(
                         Text(
                             text = "$brightnessPercent",
                             style = MaterialTheme.typography.titleMedium.copy(
-                                fontFamily = OnestFamily,
-                                fontWeight = FontWeight.Black,
-                                fontSize = 16.sp
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 15.sp
                             ),
                             color = MaterialTheme.colorScheme.onSurface
                         )

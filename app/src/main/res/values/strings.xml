@@ -1,8 +1,11 @@
 <resources>
     <string name="app_name">Cardify</string>
     <string name="search_placeholder">Поиск…</string>
+    <string name="search_tab">Поиск</string>
+    <string name="search_prompt_title">Поиск карт</string>
+    <string name="search_prompt_subtitle">Введите название магазина, номер или заметку</string>
     <string name="all_categories">Все</string>
-    <string name="all_cards_tab">Все карты</string>
+    <string name="all_cards_tab">Карты</string>
     <string name="favorites_tab">Избранное</string>
     <string name="empty_wallet_title">Кошелек пуст</string>
     <string name="empty_wallet_subtitle">Добавьте первую карту для быстрого доступа</string>
@@ -117,6 +120,17 @@
     <string name="unlock_button_action">Разблокировать</string>
 
     <!-- Sorting & Layout -->
+    <string name="sort_dialog_title">Сортировать по</string>
+    <string name="sort_order_title">Порядок</string>
+    <string name="sort_order_ascending">По возрастанию</string>
+    <string name="sort_order_descending">По убыванию</string>
+    <string name="sort_by_name">Имя</string>
+    <string name="sort_by_date">Дата добавления</string>
+    <string name="sort_by_frequency">Частота использования</string>
+    <string name="layout_section_title">Вид</string>
+    <string name="layout_cards">Карты</string>
+    <string name="layout_list">Список</string>
+    <string name="layout_grid">Сетка</string>
     <string name="sort_alphabetical">По алфавиту (A-Z)</string>
     <string name="sort_date_added">По дате добавления</string>
     <string name="sort_frequency">По частоте использования</string>

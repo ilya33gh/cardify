@@ -24,7 +24,10 @@ import kotlinx.coroutines.delay
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Fullscreen
+import androidx.compose.material.icons.rounded.Fullscreen
+import com.cardify.app.ui.theme.CardNumberFontFamily
+
+import androidx.compose.foundation.BorderStroke
 
 @Composable
 fun BarcodeDisplay(
@@ -34,17 +37,22 @@ fun BarcodeDisplay(
     showValueText: Boolean = true,
     containerColor: Color = Color.White,
     shape: Shape = RoundedCornerShape(16.dp),
+    border: BorderStroke? = null,
     onClick: (() -> Unit)? = null
 ) {
-    var bitmap by remember(value, format) { mutableStateOf<Bitmap?>(null) }
+    var bitmap by remember(value, format) { mutableStateOf(BarcodeGenerator.getCachedBitmap(value, format)) }
     var errorMessage by remember(value, format) { mutableStateOf<String?>(null) }
-    var isLoading by remember(value, format) { mutableStateOf(true) }
+    var isLoading by remember(value, format) { mutableStateOf(bitmap == null) }
 
     LaunchedEffect(value, format) {
+        val cached = BarcodeGenerator.getCachedBitmap(value, format)
+        if (cached != null) {
+            bitmap = cached
+            isLoading = false
+            return@LaunchedEffect
+        }
         isLoading = true
         errorMessage = null
-        // Delay generation until sheet enter animation completes (320ms) to prevent 120 FPS jank
-        delay(320)
         val result = BarcodeGenerator.generateBarcodeBitmap(value, format)
         result.onSuccess {
             bitmap = it
@@ -58,7 +66,6 @@ fun BarcodeDisplay(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clip(shape)
             .then(
                 if (onClick != null) {
                     Modifier.clickable(onClick = onClick)
@@ -68,6 +75,7 @@ fun BarcodeDisplay(
             ),
         color = containerColor,
         shape = shape,
+        border = border,
         tonalElevation = 0.dp,
         shadowElevation = 0.dp
     ) {
@@ -86,10 +94,8 @@ fun BarcodeDisplay(
                             .fillMaxWidth(),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(32.dp),
-                            strokeWidth = 3.dp,
-                            color = Color(0xFF1E1E1E)
+                        ExpressiveMorphLoadingIndicator(
+                            size = 44.dp
                         )
                     }
                 } else if (bitmap != null) {
@@ -121,9 +127,10 @@ fun BarcodeDisplay(
                     Text(
                         text = formatCardNumber(value, format),
                         style = MaterialTheme.typography.titleMedium.copy(
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.5.sp
+                            fontFamily = CardNumberFontFamily,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 17.sp,
+                            letterSpacing = 1.2.sp
                         ),
                         color = Color.Black
                     )
@@ -135,5 +142,12 @@ fun BarcodeDisplay(
 
 fun formatCardNumber(value: String, format: BarcodeFormatEnum): String {
     if (format.is2D || value.length > 24) return value
-    return value.chunked(4).joinToString(" ")
+    val trimmed = value.trim()
+    if (trimmed.contains(" ") || trimmed.contains("-")) {
+        return trimmed.replace(Regex("\\s+"), " ")
+    }
+    if (trimmed.all { it.isDigit() }) {
+        return trimmed.chunked(4).joinToString(" ")
+    }
+    return trimmed
 }
