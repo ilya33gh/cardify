@@ -1,4 +1,4 @@
-﻿<div align="center">
+<div align="center">
 
   <h1>💳 Cardify</h1>
 
@@ -22,6 +22,24 @@
 **Cardify** is an open-source, privacy-first Android application designed to digitize and store all your loyalty cards, store passes, discount vouchers, and memberships in one elegant, unified wallet.
 
 Built from the ground up with **Jetpack Compose** and **Material 3 Expressive (Material You)**, Cardify requires **no account registration**, has **no internet permission**, and stores all your data securely on your local device.
+
+---
+
+## 📸 Screenshots
+
+<div align="center">
+
+| 💳 Wallet & Favorites | ⚡ Card Details & Barcode | 📊 Sort & Layout Menu |
+| :---: | :---: | :---: |
+| <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1_wallet.png" width="260" alt="Wallet Screen" /> | <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2_card.png" width="260" alt="Card Details" /> | <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4_sort.png" width="260" alt="Sort & Layout" /> |
+| **Grid View with Monet Colors** | **Full Barcode & Brightness Control** | **Expressive M3 Bottom Sheet** |
+
+| ✍️ Add / Edit Card | 🔍 Real-time Search | 🔒 Settings & Security |
+| :---: | :---: | :---: |
+| <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5_new_card.png" width="260" alt="Add Card Screen" /> | <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6_search.png" width="260" alt="Search Screen" /> | <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3_settings.png" width="260" alt="Settings Screen" /> |
+| **Live Barcode Generator** | **Visual Match Highlighting** | **Themes, Biometrics & Auto-lock** |
+
+</div>
 
 ---
 
