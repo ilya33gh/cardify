@@ -30,11 +30,14 @@ class MainActivity : FragmentActivity() {
 
     private var lastPauseTimestamp: Long = 0L
     private val isAppLocked = mutableStateOf(false)
+    private val pendingDeepLinkUri = mutableStateOf<android.net.Uri?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        pendingDeepLinkUri.value = intent?.data
 
         // Only run custom exit animation on initial cold start (never on Activity recreation/wallpaper change)
         if (savedInstanceState == null) {
@@ -111,6 +114,35 @@ class MainActivity : FragmentActivity() {
                     dynamicColor = isDynamicColor
                 ) {
                     val navController = rememberNavController()
+                    val deepLinkUri by pendingDeepLinkUri
+
+                    LaunchedEffect(deepLinkUri) {
+                        deepLinkUri?.let { uri ->
+                            val cards = com.cardify.app.domain.util.CardDeepLinkHelper.parseDeepLinkCards(uri)
+                            if (cards.size > 1) {
+                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                    app.cardRepository.batchImportCards(cards)
+                                }
+                                android.widget.Toast.makeText(this@MainActivity, "Импортировано карт: ${cards.size}", android.widget.Toast.LENGTH_SHORT).show()
+                            } else if (cards.size == 1) {
+                                val payload = cards.first()
+                                navController.navigate(
+                                    com.cardify.app.ui.navigation.NavRoute.AddCard.createRoute(
+                                        barcodeValue = payload.barcodeValue,
+                                        formatName = payload.barcodeFormat,
+                                        title = payload.title,
+                                        colorHex = payload.colorHex,
+                                        notes = payload.notes,
+                                        categoryName = payload.categoryName
+                                    )
+                                ) {
+                                    launchSingleTop = true
+                                }
+                            }
+                            pendingDeepLinkUri.value = null
+                        }
+                    }
+
                     Box(modifier = Modifier.fillMaxSize()) {
                         CardifyNavHost(
                             navController = navController,
@@ -129,6 +161,12 @@ class MainActivity : FragmentActivity() {
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        pendingDeepLinkUri.value = intent.data
     }
 
     override fun onPause() {

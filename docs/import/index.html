@@ -1,0 +1,108 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cardify — Импорт карты лояльности</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #0f172a;
+            --text-secondary: #64748b;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary: #3b82f6;
+                --bg: #0f172a;
+                --card-bg: #1e293b;
+                --text: #f8fafc;
+                --text-secondary: #94a3b8;
+            }
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background-color: var(--card-bg);
+            border-radius: 28px;
+            padding: 32px 24px;
+            max-width: 440px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+        }
+        .icon {
+            width: 72px;
+            height: 72px;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border-radius: 22px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+        }
+        h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+        p { color: var(--text-secondary); font-size: 15px; line-height: 1.5; margin-bottom: 24px; }
+        .btn {
+            display: inline-block;
+            width: 100%;
+            background-color: var(--primary);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 18px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 12px;
+            transition: opacity 0.2s;
+        }
+        .btn:hover { opacity: 0.9; }
+        .btn-outline {
+            background-color: transparent;
+            border: 2px solid var(--text-secondary);
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">💳</div>
+        <h1>Карта лояльности</h1>
+        <p>Для добавления этой карты в ваш кошелек откройте ее в приложении <b>Cardify</b>.</p>
+        
+        <a id="openBtn" href="#" class="btn">Открыть в Cardify</a>
+        <a href="https://f-droid.org/" class="btn btn-outline">Скачать Cardify на F-Droid</a>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const data = params.get('data');
+        const openBtn = document.getElementById('openBtn');
+        
+        if (data) {
+            const cardifyAppUrl = `cardify://import?data=${data}`;
+            openBtn.href = cardifyAppUrl;
+            
+            // Try to auto-open if on mobile
+            if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+                window.location.href = cardifyAppUrl;
+            }
+        } else {
+            openBtn.style.display = 'none';
+        }
+    </script>
+</body>
+</html>

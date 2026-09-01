@@ -12,7 +12,7 @@ data class LoyaltyCard(
     val categoryId: Long? = null,
     val categoryName: String? = null,
     val categoryColor: String? = null,
-    val colorHex: String = "#3870FF",
+    val colorHex: String = "blue",
     val notes: String = "",
     val isFavorite: Boolean = false,
     val useCount: Int = 0,

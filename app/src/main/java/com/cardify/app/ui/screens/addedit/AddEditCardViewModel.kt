@@ -18,7 +18,7 @@ data class AddEditCardUiState(
     val barcodeValue: String = "",
     val barcodeFormat: BarcodeFormatEnum = BarcodeFormatEnum.CODE_128,
     val selectedCategoryId: Long? = null,
-    val selectedColorHex: String = CardColorPalette.options.first().primaryHex,
+    val selectedColorHex: String = "blue",
     val notes: String = "",
     val isFavorite: Boolean = false,
     val useCount: Int = 0,
@@ -35,13 +35,20 @@ class AddEditCardViewModel(
     private val categoryRepository: CategoryRepository,
     private val initialCardId: Long?,
     initialBarcodeValue: String?,
-    initialFormatName: String?
+    initialFormatName: String?,
+    initialTitle: String? = null,
+    initialColorHex: String? = null,
+    initialNotes: String? = null,
+    initialCategoryName: String? = null
 ) : ViewModel() {
 
     private val _formState = MutableStateFlow(
         AddEditCardUiState(
+            title = initialTitle ?: "",
             barcodeValue = initialBarcodeValue ?: "",
-            barcodeFormat = initialFormatName?.let { BarcodeFormatEnum.fromString(it) } ?: BarcodeFormatEnum.CODE_128
+            barcodeFormat = BarcodeFormatEnum.fromString(initialFormatName),
+            selectedColorHex = CardColorPalette.findOption(initialColorHex ?: "")?.id ?: "blue",
+            notes = initialNotes ?: ""
         )
     )
 
@@ -53,14 +60,21 @@ class AddEditCardViewModel(
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = AddEditCardUiState(isLoading = true)
+        initialValue = _formState.value
     )
 
     init {
-        loadCard()
-    }
+        if (!initialCategoryName.isNullOrBlank() && (initialCardId == null || initialCardId <= 0)) {
+            viewModelScope.launch {
+                categoryRepository.getAllCategories().firstOrNull()?.let { list ->
+                    val matched = list.find { it.name.equals(initialCategoryName.trim(), ignoreCase = true) }
+                    if (matched != null) {
+                        _formState.update { it.copy(selectedCategoryId = matched.id) }
+                    }
+                }
+            }
+        }
 
-    private fun loadCard() {
         if (initialCardId != null && initialCardId > 0) {
             viewModelScope.launch {
                 _formState.update { it.copy(isLoading = true) }
@@ -72,7 +86,7 @@ class AddEditCardViewModel(
                             barcodeValue = card.barcodeValue,
                             barcodeFormat = card.barcodeFormat,
                             selectedCategoryId = card.categoryId,
-                            selectedColorHex = card.colorHex,
+                            selectedColorHex = CardColorPalette.findOption(card.colorHex)?.id ?: card.colorHex,
                             notes = card.notes,
                             isFavorite = card.isFavorite,
                             useCount = card.useCount,
@@ -161,16 +175,24 @@ class AddEditCardViewModel(
         private val categoryRepository: CategoryRepository,
         private val initialCardId: Long?,
         private val initialBarcodeValue: String?,
-        private val initialFormatName: String?
+        private val initialFormatName: String?,
+        private val initialTitle: String? = null,
+        private val initialColorHex: String? = null,
+        private val initialNotes: String? = null,
+        private val initialCategoryName: String? = null
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             return AddEditCardViewModel(
-                cardRepository,
-                categoryRepository,
-                initialCardId,
-                initialBarcodeValue,
-                initialFormatName
+                cardRepository = cardRepository,
+                categoryRepository = categoryRepository,
+                initialCardId = initialCardId,
+                initialBarcodeValue = initialBarcodeValue,
+                initialFormatName = initialFormatName,
+                initialTitle = initialTitle,
+                initialColorHex = initialColorHex,
+                initialNotes = initialNotes,
+                initialCategoryName = initialCategoryName
             ) as T
         }
     }

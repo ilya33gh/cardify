@@ -16,6 +16,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import kotlin.math.roundToInt
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -79,16 +80,20 @@ private fun getM3GroupedItemShape(index: Int, totalCount: Int, cornerRadius: Dp 
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToAddCard: ((barcodeValue: String?, formatName: String?, title: String?, colorHex: String?, notes: String?, categoryName: String?) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val hapticHelper = rememberHapticHelper()
 
     var showAddCategoryDialog by remember { mutableStateOf(false) }
+    var showImportLinkDialog by remember { mutableStateOf(false) }
+    var showExportBottomSheet by remember { mutableStateOf(false) }
     var categoryToEdit by remember { mutableStateOf<CardCategory?>(null) }
     var categoryToDelete by remember { mutableStateOf<CardCategory?>(null) }
     var revealedCategoryId by remember { mutableStateOf<Long?>(null) }
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(categoryToDelete) {
         if (categoryToDelete != null) {
@@ -113,6 +118,17 @@ fun SettingsScreen(
             viewModel.importBackup(uri)
         }
     }
+
+    // Catima Import Launcher (.zip, .csv, .txt)
+    val catimaImportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            viewModel.importCatimaBackup(uri)
+        }
+    }
+
+    var showImportBottomSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.message) {
         uiState.message?.let { msg ->
@@ -561,8 +577,8 @@ fun SettingsScreen(
                         // Export JSON Block
                         Surface(
                             onClick = {
-                                val timestamp = System.currentTimeMillis()
-                                exportLauncher.launch("cardify_backup_$timestamp.json")
+                                hapticHelper.performClick()
+                                showExportBottomSheet = true
                             },
                             shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 6.dp, bottomEnd = 6.dp),
                             color = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -606,10 +622,10 @@ fun SettingsScreen(
                             }
                         }
 
-                        // Import JSON Block
+                        // Import Block
                         Surface(
                             onClick = {
-                                importLauncher.launch(arrayOf("application/json", "*/*"))
+                                showImportBottomSheet = true
                             },
                             shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp, bottomStart = 24.dp, bottomEnd = 24.dp),
                             color = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -635,7 +651,7 @@ fun SettingsScreen(
                                 Spacer(modifier = Modifier.width(16.dp))
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = stringResource(R.string.import_json_title),
+                                        text = stringResource(R.string.import_action_title),
                                         style = MaterialTheme.typography.titleMedium.copy(
                                             fontWeight = FontWeight.SemiBold,
                                             fontSize = 16.sp
@@ -643,13 +659,18 @@ fun SettingsScreen(
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
-                                        text = stringResource(R.string.import_json_subtitle),
+                                        text = stringResource(R.string.import_action_subtitle),
                                         style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         maxLines = 2,
                                         overflow = TextOverflow.Ellipsis
                                     )
                                 }
+                                Icon(
+                                    imageVector = Icons.Rounded.ChevronRight,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                )
                             }
                         }
                     }
@@ -888,9 +909,75 @@ fun SettingsScreen(
         )
     }
 
+    if (showExportBottomSheet) {
+        ExportSourceBottomSheet(
+            onDismiss = { showExportBottomSheet = false },
+            onSelectLink = {
+                showExportBottomSheet = false
+                coroutineScope.launch {
+                    val link = viewModel.generateAllCardsDeepLink()
+                    if (link != null) {
+                        val sendIntent = Intent().apply {
+                            action = Intent.ACTION_SEND
+                            putExtra(Intent.EXTRA_TEXT, link)
+                            type = "text/plain"
+                        }
+                        context.startActivity(Intent.createChooser(sendIntent, context.getString(R.string.export_dialog_title)))
+                    } else {
+                        Toast.makeText(context, "Нет карт для экспорта", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            },
+            onSelectJson = {
+                showExportBottomSheet = false
+                val timestamp = System.currentTimeMillis()
+                exportLauncher.launch("cardify_backup_$timestamp.json")
+            }
+        )
+    }
+
+    if (showImportBottomSheet) {
+        ImportSourceBottomSheet(
+            onDismiss = { showImportBottomSheet = false },
+            onSelectCardifyJson = {
+                showImportBottomSheet = false
+                importLauncher.launch(arrayOf("application/json", "*/*"))
+            },
+            onSelectCatima = {
+                showImportBottomSheet = false
+                catimaImportLauncher.launch(arrayOf("*/*"))
+            },
+            onSelectLink = {
+                showImportBottomSheet = false
+                showImportLinkDialog = true
+            }
+        )
+    }
+
+    if (showImportLinkDialog) {
+        ImportFromLinkDialog(
+            onDismiss = { showImportLinkDialog = false },
+            onImportSingle = { payload ->
+                showImportLinkDialog = false
+                onNavigateToAddCard?.invoke(
+                    payload.barcodeValue,
+                    payload.barcodeFormat,
+                    payload.title,
+                    payload.colorHex,
+                    payload.notes,
+                    payload.categoryName
+                )
+            },
+            onImportBatch = { cards ->
+                showImportLinkDialog = false
+                viewModel.batchImportCards(cards)
+            }
+        )
+    }
+
     if (showAddCategoryDialog) {
         var categoryName by remember { mutableStateOf("") }
-        var selectedColorHex by remember { mutableStateOf("#1E88E5") }
+        var selectedColorHex by remember { mutableStateOf("blue") }
         val iconsList = listOf(
             "shopping_cart", "checkroom", "local_pharmacy", "local_gas_station",
             "restaurant", "devices", "sports_esports", "fitness_center", "local_cafe", "card_giftcard"
@@ -1389,3 +1476,501 @@ private fun M3SwipeableCategoryRow(
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ImportSourceBottomSheet(
+    onDismiss: () -> Unit,
+    onSelectCardifyJson: () -> Unit,
+    onSelectCatima: () -> Unit,
+    onSelectLink: () -> Unit
+) {
+    val hapticHelper = rememberHapticHelper()
+    val isDark = isSystemInDarkTheme()
+    val isOled = MaterialTheme.colorScheme.surface == Color.Black
+
+    val bottomSheetContainerColor = when {
+        isOled -> Color.Black
+        isDark -> MaterialTheme.colorScheme.surfaceContainerLow
+        else -> MaterialTheme.colorScheme.surfaceContainerHigh
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        shape = BottomSheetTopShape,
+        containerColor = bottomSheetContainerColor,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        dragHandle = {
+            BottomSheetDefaults.DragHandle(
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
+        }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentWidth(Alignment.CenterHorizontally)
+                .widthIn(max = 620.dp)
+                .padding(horizontal = 20.dp)
+                .padding(top = 4.dp, bottom = 32.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.import_dialog_title),
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontFamily = OnestFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 24.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                // Cardify JSON Option (Top item with 24.dp top corners and 6.dp micro-corners at bottom)
+                Surface(
+                    onClick = {
+                        hapticHelper.performClick()
+                        onSelectCardifyJson()
+                    },
+                    shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 6.dp, bottomEnd = 6.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Rounded.AccountBalanceWallet,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.import_source_cardify_title),
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontFamily = OnestFamily,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = stringResource(R.string.import_source_cardify_subtitle),
+                                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.5.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.Rounded.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+
+                // Link / Clipboard Option (Middle item with 6.dp rounded corners)
+                Surface(
+                    onClick = {
+                        hapticHelper.performClick()
+                        onSelectLink()
+                    },
+                    shape = RoundedCornerShape(6.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Link,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.import_source_link_title),
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontFamily = OnestFamily,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = stringResource(R.string.import_source_link_subtitle),
+                                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.5.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.Rounded.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+
+                // Catima Option (Bottom item with 6.dp top and 24.dp bottom corners)
+                Surface(
+                    onClick = {
+                        hapticHelper.performClick()
+                        onSelectCatima()
+                    },
+                    shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp, bottomStart = 24.dp, bottomEnd = 24.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Rounded.SwapHoriz,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.import_source_catima_title),
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontFamily = OnestFamily,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = stringResource(R.string.import_source_catima_subtitle),
+                                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.5.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.Rounded.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ImportFromLinkDialog(
+    onDismiss: () -> Unit,
+    onImportSingle: (com.cardify.app.domain.util.SharedCardPayload) -> Unit,
+    onImportBatch: (List<com.cardify.app.domain.util.SharedCardPayload>) -> Unit
+) {
+    val context = LocalContext.current
+    val hapticHelper = rememberHapticHelper()
+    var rawInput by remember { mutableStateOf("") }
+    var isError by remember { mutableStateOf(false) }
+
+    // Auto-read clipboard on appear if valid
+    LaunchedEffect(Unit) {
+        try {
+            val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            val clipText = clipboard.primaryClip?.getItemAt(0)?.text?.toString() ?: ""
+            if (clipText.isNotBlank()) {
+                val payload = com.cardify.app.domain.util.CardDeepLinkHelper.parseRawText(clipText)
+                if (payload != null) {
+                    rawInput = clipText
+                }
+            }
+        } catch (_: Throwable) { }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+        shape = RoundedCornerShape(24.dp),
+        title = {
+            Text(
+                text = stringResource(R.string.import_link_dialog_title),
+                fontWeight = FontWeight.Bold,
+                fontFamily = OnestFamily,
+                fontSize = 20.sp
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = stringResource(R.string.import_link_dialog_desc),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                OutlinedTextField(
+                    value = rawInput,
+                    onValueChange = {
+                        rawInput = it
+                        isError = false
+                    },
+                    placeholder = { Text("https://... или cardify://...") },
+                    isError = isError,
+                    supportingText = if (isError) {
+                        { Text(stringResource(R.string.import_link_not_found), color = MaterialTheme.colorScheme.error) }
+                    } else null,
+                    trailingIcon = {
+                        IconButton(
+                            onClick = {
+                                hapticHelper.performClick()
+                                try {
+                                    val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                    val clipText = clipboard.primaryClip?.getItemAt(0)?.text?.toString() ?: ""
+                                    if (clipText.isNotBlank()) {
+                                        rawInput = clipText
+                                        isError = false
+                                    }
+                                } catch (_: Throwable) { }
+                            }
+                        ) {
+                            Icon(Icons.Rounded.ContentPaste, contentDescription = stringResource(R.string.import_link_paste_action))
+                        }
+                    },
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 3
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val cards = com.cardify.app.domain.util.CardDeepLinkHelper.parseRawTextCards(rawInput)
+                    if (cards.size > 1) {
+                        hapticHelper.performClick()
+                        onImportBatch(cards)
+                    } else if (cards.size == 1) {
+                        hapticHelper.performClick()
+                        onImportSingle(cards.first())
+                    } else {
+                        hapticHelper.performDestructiveWarning()
+                        isError = true
+                    }
+                },
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Text(stringResource(R.string.import_link_open_action))
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Text(stringResource(R.string.cancel_action))
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ExportSourceBottomSheet(
+    onDismiss: () -> Unit,
+    onSelectLink: () -> Unit,
+    onSelectJson: () -> Unit
+) {
+    val hapticHelper = rememberHapticHelper()
+    val isDark = isSystemInDarkTheme()
+    val isOled = MaterialTheme.colorScheme.surface == Color.Black
+
+    val bottomSheetContainerColor = when {
+        isOled -> Color.Black
+        isDark -> MaterialTheme.colorScheme.surfaceContainerLow
+        else -> MaterialTheme.colorScheme.surfaceContainerHigh
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        shape = BottomSheetTopShape,
+        containerColor = bottomSheetContainerColor,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        dragHandle = {
+            BottomSheetDefaults.DragHandle(
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
+        }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentWidth(Alignment.CenterHorizontally)
+                .widthIn(max = 620.dp)
+                .padding(horizontal = 20.dp)
+                .padding(top = 4.dp, bottom = 32.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.export_dialog_title),
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontFamily = OnestFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 24.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                // Option 1: Link (Top item)
+                Surface(
+                    onClick = {
+                        hapticHelper.performClick()
+                        onSelectLink()
+                    },
+                    shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 6.dp, bottomEnd = 6.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Link,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.export_all_link_option),
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontFamily = OnestFamily,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = stringResource(R.string.export_all_link_subtitle),
+                                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.5.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.Rounded.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+
+                // Option 2: JSON (Bottom item)
+                Surface(
+                    onClick = {
+                        hapticHelper.performClick()
+                        onSelectJson()
+                    },
+                    shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp, bottomStart = 24.dp, bottomEnd = 24.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Rounded.FileDownload,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.export_all_json_option),
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontFamily = OnestFamily,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = stringResource(R.string.export_all_json_subtitle),
+                                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.5.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.Rounded.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+

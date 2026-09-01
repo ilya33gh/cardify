@@ -49,6 +49,8 @@ local.properties
 *.p12
 *.pepk
 release-key.properties
+keystore/
+release_apks/
 
 # Android Profiler & Logs
 *.log

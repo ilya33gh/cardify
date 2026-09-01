@@ -39,6 +39,9 @@ interface CardDao {
     @Query("DELETE FROM cards WHERE id = :id")
     suspend fun deleteCardById(id: Long)
 
+    @Query("DELETE FROM cards WHERE id IN (:ids)")
+    suspend fun deleteCardsByIds(ids: List<Long>)
+
     @Query("UPDATE cards SET useCount = useCount + 1, lastUsedAt = :timestamp WHERE id = :id")
     suspend fun recordCardUsed(id: Long, timestamp: Long = System.currentTimeMillis())
 

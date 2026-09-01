@@ -106,6 +106,70 @@ fun buildHighlightedText(
     }
 }
 
+@Composable
+fun CardSelectionBadge(
+    isSelectionMode: Boolean,
+    isSelected: Boolean,
+    storeInitial: String,
+    contentColor: Color,
+    badgeContainerColor: Color,
+    modifier: Modifier = Modifier,
+    size: androidx.compose.ui.unit.Dp = 36.dp,
+    shape: Shape = CircleShape
+) {
+    Surface(
+        shape = shape,
+        color = when {
+            isSelectionMode && isSelected -> MaterialTheme.colorScheme.primary
+            isSelectionMode && !isSelected -> Color.Transparent
+            else -> badgeContainerColor
+        },
+        contentColor = when {
+            isSelectionMode && isSelected -> MaterialTheme.colorScheme.onPrimary
+            isSelectionMode && !isSelected -> contentColor
+            else -> contentColor
+        },
+        border = if (isSelectionMode && !isSelected) BorderStroke(2.dp, contentColor.copy(alpha = 0.55f)) else null,
+        modifier = modifier.size(size)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            AnimatedContent(
+                targetState = if (isSelectionMode) (if (isSelected) "selected" else "unselected") else "initial",
+                transitionSpec = {
+                    (fadeIn(animationSpec = tween(200, easing = FastOutSlowInEasing)) + scaleIn(initialScale = 0.8f, animationSpec = tween(200, easing = FastOutSlowInEasing)))
+                        .togetherWith(fadeOut(animationSpec = tween(150, easing = FastOutSlowInEasing)) + scaleOut(targetScale = 0.8f, animationSpec = tween(150, easing = FastOutSlowInEasing)))
+                },
+                label = "badgeState"
+            ) { state ->
+                when (state) {
+                    "selected" -> {
+                        Icon(
+                            imageVector = Icons.Rounded.Check,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(size * 0.58f)
+                        )
+                    }
+                    "unselected" -> {
+                        Spacer(modifier = Modifier.fillMaxSize())
+                    }
+                    else -> {
+                        Text(
+                            text = storeInitial,
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontFamily = OnestFamily,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = if (size > 40.dp) 20.sp else 16.sp,
+                                color = contentColor
+                            )
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 /**
  * Google Material 3 Expressive Cardfolio Pass Card (Google Pay / Google Wallet Style)
  * Symmetrical 24.dp shape, harmonious 16.dp barcode island, clean brand monogram,
@@ -118,7 +182,10 @@ fun ExpressiveLoyaltyCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     shape: Shape = ExpressiveCardShape,
-    searchQuery: String = ""
+    searchQuery: String = "",
+    isSelectionMode: Boolean = false,
+    isSelected: Boolean = false,
+    onLongClick: (() -> Unit)? = null
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -130,7 +197,9 @@ fun ExpressiveLoyaltyCard(
         label = "cardScale"
     )
 
-    val solidCardColor = CardColorPalette.getHarmonizedColor(card.colorHex)
+    val solidCardColor = CardColorPalette.getAdaptiveColor(card.colorHex)
+    val cardContentColor = CardColorPalette.getCardContentColor(card.colorHex)
+    val cardBadgeContainerColor = CardColorPalette.getCardBadgeContainerColor()
 
     val storeInitial = remember(card.title) {
         card.title.trim().take(1).uppercase()
@@ -141,14 +210,15 @@ fun ExpressiveLoyaltyCard(
             .fillMaxWidth()
             .scale(scale)
             .clip(shape)
-            .clickable(
+            .combinedClickable(
                 interactionSource = interactionSource,
                 indication = null,
-                onClick = onClick
+                onClick = onClick,
+                onLongClick = onLongClick
             ),
         shape = shape,
         color = solidCardColor,
-        contentColor = Color.White,
+        contentColor = cardContentColor,
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
         border = null
@@ -158,7 +228,7 @@ fun ExpressiveLoyaltyCard(
                 .fillMaxWidth()
                 .padding(20.dp)
         ) {
-            // 1. Top Header: Minimal Google Pay Monogram Badge + Category Pill (Left) + Favorite Squircle (Right)
+            // 1. Top Header: Minimal Monogram Badge + Category Pill (Left) + Favorite Squircle (Right)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -168,39 +238,31 @@ fun ExpressiveLoyaltyCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Brand Monogram Circle
-                    Surface(
-                        shape = CircleShape,
-                        color = Color.Black.copy(alpha = 0.22f),
-                        contentColor = Color.White,
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = storeInitial,
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontFamily = OnestFamily,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 17.sp
-                                )
-                            )
-                        }
-                    }
+                    // Brand Monogram / Selection Circle
+                    CardSelectionBadge(
+                        isSelectionMode = isSelectionMode,
+                        isSelected = isSelected,
+                        storeInitial = storeInitial,
+                        contentColor = cardContentColor,
+                        badgeContainerColor = cardBadgeContainerColor,
+                        size = 36.dp
+                    )
 
                     if (!card.categoryName.isNullOrBlank()) {
                         val localizedRes = getLocalizedCategoryRes(card.categoryName)
                         val displayCatName = if (localizedRes != null) stringResource(localizedRes) else card.categoryName
                         Surface(
                             shape = PillShape,
-                            color = Color.Black.copy(alpha = 0.18f),
-                            contentColor = Color.White
+                            color = cardBadgeContainerColor,
+                            contentColor = cardContentColor
                         ) {
                             Text(
                                 text = displayCatName,
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     fontFamily = OnestFamily,
                                     fontWeight = FontWeight.SemiBold,
-                                    fontSize = 13.sp
+                                    fontSize = 13.sp,
+                                    color = cardContentColor
                                 ),
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
                                 maxLines = 1,
@@ -211,7 +273,7 @@ fun ExpressiveLoyaltyCard(
                     }
                 }
 
-                // Favorite Round Pink Badge with White Border (Miniature replica of add-screen button)
+                // Favorite Round Pink Badge with White Border
                 if (card.isFavorite) {
                     Surface(
                         shape = CircleShape,
@@ -236,7 +298,7 @@ fun ExpressiveLoyaltyCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 2. Merchant / Card Title (Google Sans Flex Card Title with Match Highlight)
+            // 2. Merchant / Card Title
             Text(
                 text = buildHighlightedText(card.title, searchQuery),
                 style = MaterialTheme.typography.titleLarge.copy(
@@ -245,7 +307,7 @@ fun ExpressiveLoyaltyCard(
                     fontSize = 22.sp,
                     lineHeight = 26.sp
                 ),
-                color = Color.White,
+                color = cardContentColor,
                 maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis
@@ -294,13 +356,16 @@ fun getGroupedShape(
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ExpressiveLoyaltyCardRow(
+fun CompactCardifyCardItem(
     card: LoyaltyCard,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     searchQuery: String = "",
     index: Int = 0,
-    totalCount: Int = 1
+    totalCount: Int = 1,
+    isSelectionMode: Boolean = false,
+    isSelected: Boolean = false,
+    onLongClick: (() -> Unit)? = null
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -311,7 +376,8 @@ fun ExpressiveLoyaltyCardRow(
         label = "rowScale"
     )
 
-    val solidCardColor = CardColorPalette.getHarmonizedColor(card.colorHex)
+    val solidCardColor = CardColorPalette.getAdaptiveColor(card.colorHex)
+    val cardContentColor = CardColorPalette.getCardContentColor(card.colorHex)
 
     val storeInitial = remember(card.title) {
         card.title.trim().take(1).uppercase()
@@ -326,10 +392,11 @@ fun ExpressiveLoyaltyCardRow(
             .fillMaxWidth()
             .scale(scale)
             .clip(rowShape)
-            .clickable(
+            .combinedClickable(
                 interactionSource = interactionSource,
                 indication = null,
-                onClick = onClick
+                onClick = onClick,
+                onLongClick = onLongClick
             ),
         shape = rowShape,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -343,25 +410,16 @@ fun ExpressiveLoyaltyCardRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Expressive Scalloped / Squircle Monogram Badge (Photo 4)
-            Surface(
+            // Expressive Scalloped / Squircle Monogram / Selection Badge
+            CardSelectionBadge(
+                isSelectionMode = isSelectionMode,
+                isSelected = isSelected,
+                storeInitial = storeInitial,
+                contentColor = cardContentColor,
+                badgeContainerColor = solidCardColor,
                 shape = RoundedCornerShape(16.dp),
-                color = solidCardColor,
-                modifier = Modifier.size(46.dp),
-                shadowElevation = 0.dp
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = storeInitial,
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontFamily = OnestFamily,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 20.sp,
-                            color = Color.White
-                        )
-                    )
-                }
-            }
+                size = 46.dp
+            )
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -378,10 +436,9 @@ fun ExpressiveLoyaltyCardRow(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = buildHighlightedText(card.barcodeValue, searchQuery),
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontFamily = OnestFamily,
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 13.5.sp
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontFamily = CardNumberFontFamily,
+                        fontSize = 14.sp
                     ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -389,38 +446,36 @@ fun ExpressiveLoyaltyCardRow(
                 )
             }
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (card.isFavorite) {
-                    Surface(
-                        shape = CircleShape,
-                        color = ExpressivePink,
-                        contentColor = Color.White,
-                        modifier = Modifier.size(26.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Rounded.Favorite,
-                                contentDescription = "Favorite",
-                                tint = Color.White,
-                                modifier = Modifier.size(14.dp)
-                            )
-                        }
+            if (card.isFavorite) {
+                Surface(
+                    shape = CircleShape,
+                    color = ExpressivePink.copy(alpha = 0.15f),
+                    contentColor = ExpressivePink,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Rounded.Favorite,
+                            contentDescription = null,
+                            tint = ExpressivePink,
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
                 }
-
+            } else if (!card.categoryName.isNullOrBlank()) {
+                val localizedRes = getLocalizedCategoryRes(card.categoryName)
+                val displayCatName = if (localizedRes != null) stringResource(localizedRes) else card.categoryName
                 Surface(
                     shape = PillShape,
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 ) {
                     Text(
-                        text = card.barcodeFormat.displayName,
+                        text = displayCatName,
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontFamily = OnestFamily,
                             fontWeight = FontWeight.SemiBold,
-                            fontSize = 11.sp
+                            fontSize = 12.sp
                         ),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
@@ -431,15 +486,38 @@ fun ExpressiveLoyaltyCardRow(
     }
 }
 
+@Composable
+fun ExpressiveLoyaltyCardRow(
+    card: LoyaltyCard,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    searchQuery: String = "",
+    index: Int = 0,
+    totalCount: Int = 1
+) {
+    CompactCardifyCardItem(
+        card = card,
+        onClick = onClick,
+        modifier = modifier,
+        searchQuery = searchQuery,
+        index = index,
+        totalCount = totalCount
+    )
+}
+
 /**
  * 2-Column Compact Grid Card View for Loyalty Cards (Google Wallet Grid Style)
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ExpressiveLoyaltyCardGrid(
     card: LoyaltyCard,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    searchQuery: String = ""
+    searchQuery: String = "",
+    isSelectionMode: Boolean = false,
+    isSelected: Boolean = false,
+    onLongClick: (() -> Unit)? = null
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -450,7 +528,10 @@ fun ExpressiveLoyaltyCardGrid(
         label = "gridScale"
     )
 
-    val solidCardColor = CardColorPalette.getHarmonizedColor(card.colorHex)
+    val solidCardColor = CardColorPalette.getAdaptiveColor(card.colorHex)
+    val cardContentColor = CardColorPalette.getCardContentColor(card.colorHex)
+    val cardSecondaryColor = CardColorPalette.getCardSecondaryContentColor(card.colorHex)
+    val cardBadgeContainerColor = CardColorPalette.getCardBadgeContainerColor()
 
     val storeInitial = remember(card.title) {
         card.title.trim().take(1).uppercase()
@@ -462,14 +543,15 @@ fun ExpressiveLoyaltyCardGrid(
             .height(130.dp)
             .scale(scale)
             .clip(ExpressiveGridCardShape)
-            .clickable(
+            .combinedClickable(
                 interactionSource = interactionSource,
                 indication = null,
-                onClick = onClick
+                onClick = onClick,
+                onLongClick = onLongClick
             ),
         shape = ExpressiveGridCardShape,
         color = solidCardColor,
-        contentColor = Color.White
+        contentColor = cardContentColor
     ) {
         Column(
             modifier = Modifier
@@ -482,23 +564,15 @@ fun ExpressiveLoyaltyCardGrid(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Surface(
-                    shape = CircleShape,
-                    color = Color.Black.copy(alpha = 0.22f),
-                    contentColor = Color.White,
-                    modifier = Modifier.size(34.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = storeInitial,
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontFamily = OnestFamily,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
-                            )
-                        )
-                    }
-                }
+                // Brand Monogram / Selection Circle
+                CardSelectionBadge(
+                    isSelectionMode = isSelectionMode,
+                    isSelected = isSelected,
+                    storeInitial = storeInitial,
+                    contentColor = cardContentColor,
+                    badgeContainerColor = cardBadgeContainerColor,
+                    size = 34.dp
+                )
 
                 if (card.isFavorite) {
                     Surface(
@@ -531,7 +605,7 @@ fun ExpressiveLoyaltyCardGrid(
                         fontSize = 17.sp,
                         lineHeight = 20.sp
                     ),
-                    color = Color.White,
+                    color = cardContentColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -544,7 +618,7 @@ fun ExpressiveLoyaltyCardGrid(
                         fontSize = 13.sp,
                         letterSpacing = 0.5.sp
                     ),
-                    color = Color.White.copy(alpha = 0.85f),
+                    color = cardSecondaryColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -1280,6 +1354,8 @@ fun ColorPickerRow(
     modifier: Modifier = Modifier
 ) {
     val hapticHelper = rememberHapticHelper()
+    val isDark = CardColorPalette.isDarkTheme()
+    val checkmarkTint = if (isDark) Color.White else Color(0xFF191C20)
 
     Row(
         modifier = modifier
@@ -1289,8 +1365,9 @@ fun ColorPickerRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         CardColorPalette.options.forEach { option ->
-            val isSelected = selectedHex.equals(option.primaryHex, ignoreCase = true)
-            val color = CardColorPalette.getHarmonizedColor(option.primaryHex)
+            val isSelected = selectedHex.equals(option.id, ignoreCase = true) ||
+                    selectedHex.equals(option.legacyHex, ignoreCase = true)
+            val color = CardColorPalette.getAdaptiveCardColor(option.id, isDark)
 
             Box(
                 modifier = Modifier
@@ -1299,11 +1376,11 @@ fun ColorPickerRow(
                     .background(color)
                     .clickable {
                         hapticHelper.performClick()
-                        onSelectHex(option.primaryHex)
+                        onSelectHex(option.id)
                     }
                     .border(
-                        width = if (isSelected) 3.5.dp else 0.dp,
-                        color = if (isSelected) MaterialTheme.colorScheme.onSurface else Color.Transparent,
+                        width = if (isSelected) 3.5.dp else if (!isDark) 1.dp else 0.dp,
+                        color = if (isSelected) MaterialTheme.colorScheme.onSurface else if (!isDark) Color.Black.copy(alpha = 0.08f) else Color.Transparent,
                         shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center
@@ -1312,7 +1389,7 @@ fun ColorPickerRow(
                     Icon(
                         imageVector = Icons.Rounded.Check,
                         contentDescription = "Selected",
-                        tint = Color.White,
+                        tint = checkmarkTint,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -1361,10 +1438,15 @@ fun getCategoryIcon(iconName: String): ImageVector {
 fun M3ExpressiveSpeedDialFab(
     onScanClick: () -> Unit,
     onManualClick: () -> Unit,
+    isVisible: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     var isExpanded by remember { mutableStateOf(false) }
     val hapticHelper = rememberHapticHelper()
+
+    LaunchedEffect(isVisible) {
+        if (!isVisible) isExpanded = false
+    }
 
     val rotation by animateFloatAsState(
         targetValue = if (isExpanded) 135f else 0f,
@@ -1375,9 +1457,18 @@ fun M3ExpressiveSpeedDialFab(
         label = "fabRotation"
     )
 
+    val hideRotation by animateFloatAsState(
+        targetValue = if (isVisible) 0f else -90f,
+        animationSpec = tween(
+            durationMillis = if (isVisible) 340 else 200,
+            easing = FastOutSlowInEasing
+        ),
+        label = "fabHideRotation"
+    )
+
     // Full-screen backdrop overlay for auto-closing on outside tap
     AnimatedVisibility(
-        visible = isExpanded,
+        visible = isExpanded && isVisible,
         enter = fadeIn(tween(200)),
         exit = fadeOut(tween(160))
     ) {
@@ -1394,125 +1485,133 @@ fun M3ExpressiveSpeedDialFab(
         )
     }
 
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.BottomEnd
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = fadeIn(tween(340, easing = FastOutSlowInEasing)) + scaleIn(tween(340, easing = FastOutSlowInEasing), initialScale = 0.75f),
+        exit = fadeOut(tween(200, easing = FastOutSlowInEasing)) + scaleOut(tween(200, easing = FastOutSlowInEasing), targetScale = 0.75f),
+        modifier = modifier
     ) {
-        Column(
-            horizontalAlignment = Alignment.End,
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+        Box(
+            contentAlignment = Alignment.BottomEnd
         ) {
-            // Speed Dial Items (Expanded - Unified Pills matching photo)
-            AnimatedVisibility(
-                visible = isExpanded,
-                enter = fadeIn(tween(180)) + slideInVertically(
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioLowBouncy,
-                        stiffness = Spring.StiffnessMediumLow
-                    ),
-                    initialOffsetY = { it / 2 }
-                ) + scaleIn(tween(180, easing = FastOutSlowInEasing), initialScale = 0.82f),
-                exit = fadeOut(tween(140)) + slideOutVertically(
-                    animationSpec = tween(140, easing = FastOutSlowInEasing),
-                    targetOffsetY = { it / 2 }
-                ) + scaleOut(tween(140, easing = FastOutSlowInEasing), targetScale = 0.82f)
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Column(
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                // Speed Dial Items (Expanded - Unified Pills matching photo)
+                AnimatedVisibility(
+                    visible = isExpanded,
+                    enter = fadeIn(tween(180)) + slideInVertically(
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioLowBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        ),
+                        initialOffsetY = { it / 2 }
+                    ) + scaleIn(tween(180, easing = FastOutSlowInEasing), initialScale = 0.82f),
+                    exit = fadeOut(tween(140)) + slideOutVertically(
+                        animationSpec = tween(140, easing = FastOutSlowInEasing),
+                        targetOffsetY = { it / 2 }
+                    ) + scaleOut(tween(140, easing = FastOutSlowInEasing), targetScale = 0.82f)
                 ) {
-                    // Item 1: Manual Action Pill
-                    Surface(
-                        onClick = {
-                            hapticHelper.performClick()
-                            isExpanded = false
-                            onManualClick()
-                        },
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        tonalElevation = 4.dp,
-                        shadowElevation = 8.dp
+                    Column(
+                        horizontalAlignment = Alignment.End,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        // Item 1: Manual Action Pill
+                        Surface(
+                            onClick = {
+                                hapticHelper.performClick()
+                                isExpanded = false
+                                onManualClick()
+                            },
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            tonalElevation = 4.dp,
+                            shadowElevation = 8.dp
                         ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Edit,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.size(22.dp)
-                            )
-                            Text(
-                                text = stringResource(R.string.manual_action),
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontFamily = OnestFamily,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp
-                                ),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
+                            Row(
+                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Edit,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                                Text(
+                                    text = stringResource(R.string.manual_action),
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontFamily = OnestFamily,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp
+                                    ),
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
                         }
-                    }
 
-                    // Item 2: Scan Code Action Pill
-                    Surface(
-                        onClick = {
-                            hapticHelper.performClick()
-                            isExpanded = false
-                            onScanClick()
-                        },
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        tonalElevation = 4.dp,
-                        shadowElevation = 8.dp
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        // Item 2: Scan Code Action Pill
+                        Surface(
+                            onClick = {
+                                hapticHelper.performClick()
+                                isExpanded = false
+                                onScanClick()
+                            },
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            tonalElevation = 4.dp,
+                            shadowElevation = 8.dp
                         ) {
-                            Icon(
-                                imageVector = Icons.Rounded.QrCode2,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.size(22.dp)
-                            )
-                            Text(
-                                text = stringResource(R.string.scan_action),
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontFamily = OnestFamily,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp
-                                ),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
+                            Row(
+                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.QrCode2,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                                Text(
+                                    text = stringResource(R.string.scan_action),
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontFamily = OnestFamily,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp
+                                    ),
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            // Primary FAB (Exact Requested Size: 72.dp)
-            FloatingActionButton(
-                onClick = {
-                    hapticHelper.performClick()
-                    isExpanded = !isExpanded
-                },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = CircleShape,
-                modifier = Modifier.size(72.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Add,
-                    contentDescription = "Add Card",
+                // Primary FAB (Exact Requested Size: 72.dp)
+                FloatingActionButton(
+                    onClick = {
+                        hapticHelper.performClick()
+                        isExpanded = !isExpanded
+                    },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    shape = CircleShape,
                     modifier = Modifier
-                        .size(34.dp)
-                        .rotate(rotation)
-                )
+                        .size(72.dp)
+                        .graphicsLayer { rotationZ = hideRotation }
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Add,
+                        contentDescription = "Add Card",
+                        modifier = Modifier
+                            .size(34.dp)
+                            .rotate(rotation)
+                    )
+                }
             }
         }
     }

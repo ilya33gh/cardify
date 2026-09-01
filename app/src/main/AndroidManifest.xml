@@ -25,12 +25,30 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
             android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.App.Starting">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Cardify Deep Link for Shared Cards (Custom scheme and HTTPS App Links) -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="cardify"
+                    android:host="import" />
+                <data
+                    android:scheme="https"
+                    android:host="ilya33gh.github.io"
+                    android:pathPrefix="/cardify/import" />
+                <data
+                    android:scheme="https"
+                    android:host="ilya33gh.github.io"
+                    android:pathPrefix="/import" />
             </intent-filter>
         </activity>
     </application>

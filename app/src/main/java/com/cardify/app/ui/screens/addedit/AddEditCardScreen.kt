@@ -59,7 +59,7 @@ fun AddEditCardScreen(
     val uiState by viewModel.uiState.collectAsState()
     val windowSizeInfo = MaterialThemeAdaptive
 
-    val dynamicCardColor = CardColorPalette.getHarmonizedColor(uiState.selectedColorHex)
+    val dynamicCardColor = CardColorPalette.getAdaptiveColor(uiState.selectedColorHex)
 
     LaunchedEffect(uiState.isSaved) {
         if (uiState.isSaved) {
@@ -119,6 +119,7 @@ fun AddEditCardScreen(
                             barcodeValue = uiState.barcodeValue,
                             barcodeFormat = uiState.barcodeFormat,
                             dynamicCardColor = dynamicCardColor,
+                            selectedColorHex = uiState.selectedColorHex,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -163,6 +164,7 @@ fun AddEditCardScreen(
                         barcodeValue = uiState.barcodeValue,
                         barcodeFormat = uiState.barcodeFormat,
                         dynamicCardColor = dynamicCardColor,
+                        selectedColorHex = uiState.selectedColorHex,
                         modifier = Modifier.fillMaxWidth()
                     )
 
@@ -228,13 +230,16 @@ private fun CardPreviewCard(
     barcodeValue: String,
     barcodeFormat: BarcodeFormatEnum,
     dynamicCardColor: Color,
+    selectedColorHex: String,
     modifier: Modifier = Modifier
 ) {
+    val cardContentColor = CardColorPalette.getCardContentColor(selectedColorHex)
+
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(28.dp),
         color = dynamicCardColor,
-        contentColor = Color.White,
+        contentColor = cardContentColor,
         tonalElevation = 4.dp
     ) {
         Column(
@@ -248,7 +253,7 @@ private fun CardPreviewCard(
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 18.sp
                 ),
-                color = Color.White,
+                color = cardContentColor,
                 maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis

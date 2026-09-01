@@ -63,7 +63,8 @@ fun CardDetailSheet(
         }
     }
 
-    val baseCardColor = CardColorPalette.getHarmonizedColor(card.colorHex)
+    val baseCardColor = CardColorPalette.getAdaptiveColor(card.colorHex)
+    val cardContentColor = CardColorPalette.getCardContentColor(card.colorHex)
 
     val isOled = MaterialTheme.colorScheme.surface == Color.Black
 
@@ -111,13 +112,14 @@ fun CardDetailSheet(
                     Surface(
                         shape = PillShape,
                         color = baseCardColor,
-                        contentColor = Color.White
+                        contentColor = cardContentColor
                     ) {
                         Text(
                             text = displayCatName,
                             style = MaterialTheme.typography.labelLarge.copy(
                                 fontFamily = OnestFamily,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                color = cardContentColor
                             ),
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                             maxLines = 1,
@@ -265,13 +267,14 @@ fun CardDetailSheet(
                             )
                         }
 
-                        // Share Action
+                        // Share Action (Secure Opaque Deep Link)
                         IconButton(
                             onClick = {
                                 hapticHelper.performClick()
+                                val deepLink = com.cardify.app.domain.util.CardDeepLinkHelper.createDeepLink(card)
                                 val sendIntent = Intent().apply {
                                     action = Intent.ACTION_SEND
-                                    putExtra(Intent.EXTRA_TEXT, "${card.title}: ${card.barcodeValue}")
+                                    putExtra(Intent.EXTRA_TEXT, deepLink)
                                     type = "text/plain"
                                 }
                                 context.startActivity(Intent.createChooser(sendIntent, shareTitleText))

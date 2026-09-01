@@ -11,7 +11,7 @@ data class CardEntity(
     val barcodeValue: String,
     val barcodeFormat: BarcodeFormatEnum,
     val categoryId: Long? = null,
-    val colorHex: String = "#4D88FF",
+    val colorHex: String = "blue",
     val notes: String = "",
     val isFavorite: Boolean = false,
     val useCount: Int = 0,

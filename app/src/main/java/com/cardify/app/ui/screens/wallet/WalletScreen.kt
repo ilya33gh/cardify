@@ -97,16 +97,23 @@ import com.cardify.app.ui.theme.*
 fun WalletScreen(
     viewModel: WalletViewModel,
     isWalletTop: Boolean = true,
+    backupRepository: com.cardify.app.data.repository.BackupRepository? = null,
     onNavigateToScanner: () -> Unit,
     onNavigateToAddCard: () -> Unit,
     onNavigateToEditCard: (Long) -> Unit,
-    onNavigateToSettings: () -> Unit
+    onNavigateToSettings: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var currentNavTab by rememberSaveable { mutableIntStateOf(0) }
 
     var showSortBottomSheet by remember { mutableStateOf(false) }
     var cardToDelete by remember { mutableStateOf<LoyaltyCard?>(null) }
+    val selectedCardIds = remember { mutableStateListOf<Long>() }
+    var isSelectionActive by remember { mutableStateOf(false) }
+    val isSelectionMode = isSelectionActive
+    var showShareBundleBottomSheet by remember { mutableStateOf(false) }
+    var showDeleteSelectedDialog by remember { mutableStateOf(false) }
 
     val hapticHelper = rememberHapticHelper()
 
@@ -123,12 +130,35 @@ fun WalletScreen(
         }
     }
 
+    // System Back Gesture: In selection mode, clear selection and exit mode
+    BackHandler(enabled = isSelectionMode) {
+        selectedCardIds.clear()
+        isSelectionActive = false
+    }
+
     // System Back Gesture: When in Search tab, return to Cards tab
-    BackHandler(enabled = currentNavTab == 1) {
+    BackHandler(enabled = !isSelectionMode && currentNavTab == 1) {
         currentNavTab = 0
     }
 
     val isDark = isSystemInDarkTheme()
+    val coroutineScope = rememberCoroutineScope()
+
+    // Export Selected Cards Launcher
+    val exportSelectedJsonLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null) {
+            coroutineScope.launch {
+                val res = backupRepository?.exportSelectedToJson(uri, selectedCardIds.toList())
+                if (res?.isSuccess == true) {
+                    android.widget.Toast.makeText(context, "Экспортировано: ${res.getOrNull()}", android.widget.Toast.LENGTH_SHORT).show()
+                    selectedCardIds.clear()
+                    isSelectionActive = false
+                }
+            }
+        }
+    }
 
     // Categories list for Pager Page mapping
     val categoriesList = remember(uiState.categories) { uiState.categories }
@@ -175,7 +205,6 @@ fun WalletScreen(
     }
 
     val windowSizeInfo = MaterialThemeAdaptive
-    val coroutineScope = rememberCoroutineScope()
     val density = LocalDensity.current
     val maxCollapseDp = if (windowSizeInfo.heightType == WindowType.COMPACT || windowSizeInfo.isLandscape) 60.dp else 92.dp
     val maxCollapsePx = with(density) { maxCollapseDp.toPx() }
@@ -273,8 +302,52 @@ fun WalletScreen(
         }
     }
 
+    val selectionDimAlpha by animateFloatAsState(
+        targetValue = if (isSelectionMode) 0.35f else 1f,
+        animationSpec = tween(250, easing = FastOutSlowInEasing),
+        label = "selectionDimAlpha"
+    )
+
+    // Auto-collapse top "cardify" banner smoothly when entering selection mode
+    LaunchedEffect(isSelectionMode) {
+        if (isSelectionMode && headerCollapseOffsetPx > -maxCollapsePx) {
+            settleAnim.snapTo(headerCollapseOffsetPx)
+            settleAnim.animateTo(
+                targetValue = -maxCollapsePx,
+                animationSpec = spring(
+                    dampingRatio = 0.9f,
+                    stiffness = 420f
+                )
+            ) {
+                headerCollapseOffsetPx = value
+            }
+        }
+    }
+
+    val onCardTap: (LoyaltyCard) -> Unit = { card ->
+        if (isSelectionMode) {
+            hapticHelper.performClick()
+            if (selectedCardIds.contains(card.id)) {
+                selectedCardIds.remove(card.id)
+            } else {
+                selectedCardIds.add(card.id)
+            }
+        } else {
+            triggerHaptic()
+            viewModel.onCardClicked(card)
+        }
+    }
+
+    val onCardLongPress: (LoyaltyCard) -> Unit = { card ->
+        hapticHelper.performClick()
+        isSelectionActive = true
+        if (!selectedCardIds.contains(card.id)) {
+            selectedCardIds.add(card.id)
+        }
+    }
+
     BoxWithConstraints(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surfaceContainer)
     ) {
@@ -300,7 +373,8 @@ fun WalletScreen(
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(topBarHeight),
+                        .height(topBarHeight)
+                        .graphicsLayer { alpha = selectionDimAlpha },
                     color = MaterialTheme.colorScheme.surfaceContainer,
                     tonalElevation = 0.dp,
                     shadowElevation = 0.dp
@@ -407,92 +481,22 @@ fun WalletScreen(
                         }
                     }
                 }
-            },
-            bottomBar = {
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    tonalElevation = 0.dp
-                ) {
-                    NavigationBarItem(
-                        selected = currentNavTab == 0,
-                        onClick = {
-                            triggerHaptic()
-                            currentNavTab = 0
-                        },
-                        icon = {
-                            Icon(
-                                imageVector = Icons.Rounded.AccountBalanceWallet,
-                                contentDescription = stringResource(R.string.all_cards_tab)
-                            )
-                        },
-                        label = {
-                            Text(
-                                text = stringResource(R.string.all_cards_tab),
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontFamily = InterFamily,
-                                    fontWeight = if (currentNavTab == 0) FontWeight.Bold else FontWeight.Medium
-                                )
-                            )
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            selectedTextColor = MaterialTheme.colorScheme.primary,
-                            indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    )
-
-                    NavigationBarItem(
-                        selected = currentNavTab == 1,
-                        onClick = {
-                            triggerHaptic()
-                            currentNavTab = 1
-                        },
-                        icon = {
-                            Icon(
-                                imageVector = Icons.Rounded.Search,
-                                contentDescription = stringResource(R.string.search_tab)
-                            )
-                        },
-                        label = {
-                            Text(
-                                text = stringResource(R.string.search_tab),
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontFamily = InterFamily,
-                                    fontWeight = if (currentNavTab == 1) FontWeight.Bold else FontWeight.Medium
-                                )
-                            )
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            selectedTextColor = MaterialTheme.colorScheme.primary,
-                            indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    )
-                }
             }
         ) { paddingValues ->
             AnimatedContent(
                 targetState = currentNavTab,
                 transitionSpec = {
-                    val slideDuration = 340
+                    val slideDuration = 280
                     val easing = FastOutSlowInEasing
                     if (targetState == 1) {
-                        (slideInHorizontally(animationSpec = tween(slideDuration, easing = easing)) { width -> width } +
-                                fadeIn(animationSpec = tween(slideDuration, easing = easing))) togetherWith
-                                (slideOutHorizontally(animationSpec = tween(slideDuration, easing = easing)) { width -> -width / 3 } +
-                                        fadeOut(animationSpec = tween(slideDuration - 60, easing = easing)))
+                        slideInHorizontally(animationSpec = tween(slideDuration, easing = easing)) { width -> width } togetherWith
+                                slideOutHorizontally(animationSpec = tween(slideDuration, easing = easing)) { width -> -width }
                     } else {
-                        (slideInHorizontally(animationSpec = tween(slideDuration, easing = easing)) { width -> -width } +
-                                fadeIn(animationSpec = tween(slideDuration, easing = easing))) togetherWith
-                                (slideOutHorizontally(animationSpec = tween(slideDuration, easing = easing)) { width -> width / 3 } +
-                                        fadeOut(animationSpec = tween(slideDuration - 60, easing = easing)))
+                        slideInHorizontally(animationSpec = tween(slideDuration, easing = easing)) { width -> -width } togetherWith
+                                slideOutHorizontally(animationSpec = tween(slideDuration, easing = easing)) { width -> width }
                     }
                 },
-                label = "navTabNonLinearSlide",
+                label = "navTabSlide",
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
@@ -522,28 +526,33 @@ fun WalletScreen(
                                 categories = uiState.categories,
                                 selectedCategoryIndex = activeCategoryIndex,
                                 onSelectCategory = { catId ->
-                                    val targetPage = if (catId == null) 0 else {
-                                        val idx = categoriesList.indexOfFirst { it.id == catId }
-                                        if (idx >= 0) idx + 1 else 0
-                                    }
-                                    manualTapTargetIndex = targetPage
-                                    if (pagerState.currentPage != targetPage) {
-                                        coroutineScope.launch {
-                                            pagerState.animateScrollToPage(
-                                                page = targetPage,
-                                                animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing)
-                                            )
+                                    if (!isSelectionMode) {
+                                        val targetPage = if (catId == null) 0 else {
+                                            val idx = categoriesList.indexOfFirst { it.id == catId }
+                                            if (idx >= 0) idx + 1 else 0
+                                        }
+                                        manualTapTargetIndex = targetPage
+                                        if (pagerState.currentPage != targetPage) {
+                                            coroutineScope.launch {
+                                                pagerState.animateScrollToPage(
+                                                    page = targetPage,
+                                                    animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing)
+                                                )
+                                            }
                                         }
                                     }
                                 },
-                                modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
+                                modifier = Modifier
+                                    .padding(top = 4.dp, bottom = 4.dp)
+                                    .graphicsLayer { alpha = selectionDimAlpha }
                             )
 
                             // 4. Cards Count & Layout Toggle Row (Subtle, Expressive)
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 18.dp, vertical = 4.dp),
+                                    .padding(horizontal = 18.dp, vertical = 4.dp)
+                                    .graphicsLayer { alpha = selectionDimAlpha },
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -557,11 +566,11 @@ fun WalletScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                                 )
 
-    val sortButtonRotation by animateFloatAsState(
-        targetValue = if (showSortBottomSheet) 180f else 0f,
-        animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing),
-        label = "sortButtonRotation"
-    )
+                                val sortButtonRotation by animateFloatAsState(
+                                    targetValue = if (showSortBottomSheet) 180f else 0f,
+                                    animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing),
+                                    label = "sortButtonRotation"
+                                )
 
                                 Surface(
                                     shape = RoundedCornerShape(14.dp),
@@ -573,8 +582,10 @@ fun WalletScreen(
                                 ) {
                                     IconButton(
                                         onClick = {
-                                            triggerHaptic()
-                                            showSortBottomSheet = true
+                                            if (!isSelectionMode) {
+                                                triggerHaptic()
+                                                showSortBottomSheet = true
+                                            }
                                         }
                                     ) {
                                         Icon(
@@ -607,6 +618,7 @@ fun WalletScreen(
                                 ) {
                                     HorizontalPager(
                                         state = pagerState,
+                                        userScrollEnabled = !isSelectionMode,
                                         modifier = Modifier.fillMaxSize()
                                     ) { page ->
                                         // Calculate page cards with favorites pinned to the top
@@ -660,10 +672,10 @@ fun WalletScreen(
                                                                 ExpressiveLoyaltyCard(
                                                                     card = card,
                                                                     searchQuery = "",
-                                                                    onClick = {
-                                                                        triggerHaptic()
-                                                                        viewModel.onCardClicked(card)
-                                                                    }
+                                                                    isSelectionMode = isSelectionMode,
+                                                                    isSelected = selectedCardIds.contains(card.id),
+                                                                    onClick = { onCardTap(card) },
+                                                                    onLongClick = { onCardLongPress(card) }
                                                                 )
                                                             }
                                                             item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
@@ -682,10 +694,10 @@ fun WalletScreen(
                                                                 ExpressiveLoyaltyCard(
                                                                     card = card,
                                                                     searchQuery = "",
-                                                                    onClick = {
-                                                                        triggerHaptic()
-                                                                        viewModel.onCardClicked(card)
-                                                                    }
+                                                                    isSelectionMode = isSelectionMode,
+                                                                    isSelected = selectedCardIds.contains(card.id),
+                                                                    onClick = { onCardTap(card) },
+                                                                    onLongClick = { onCardLongPress(card) }
                                                                 )
                                                             }
                                                             item { Spacer(modifier = Modifier.height(100.dp)) }
@@ -704,13 +716,13 @@ fun WalletScreen(
                                                             verticalArrangement = Arrangement.spacedBy(10.dp)
                                                         ) {
                                                             items(pageCards, key = { it.id }) { card ->
-                                                                ExpressiveLoyaltyCardRow(
+                                                                CompactCardifyCardItem(
                                                                     card = card,
                                                                     searchQuery = "",
-                                                                    onClick = {
-                                                                        triggerHaptic()
-                                                                        viewModel.onCardClicked(card)
-                                                                    }
+                                                                    isSelectionMode = isSelectionMode,
+                                                                    isSelected = selectedCardIds.contains(card.id),
+                                                                    onClick = { onCardTap(card) },
+                                                                    onLongClick = { onCardLongPress(card) }
                                                                 )
                                                             }
                                                             item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
@@ -731,15 +743,15 @@ fun WalletScreen(
                                                                 verticalArrangement = Arrangement.spacedBy(3.dp)
                                                             ) {
                                                                 itemsIndexed(pageCards, key = { _, it -> it.id }) { index, card ->
-                                                                    ExpressiveLoyaltyCardRow(
+                                                                    CompactCardifyCardItem(
                                                                         card = card,
                                                                         searchQuery = "",
                                                                         index = index,
                                                                         totalCount = pageCards.size,
-                                                                        onClick = {
-                                                                            triggerHaptic()
-                                                                            viewModel.onCardClicked(card)
-                                                                        }
+                                                                        isSelectionMode = isSelectionMode,
+                                                                        isSelected = selectedCardIds.contains(card.id),
+                                                                        onClick = { onCardTap(card) },
+                                                                        onLongClick = { onCardLongPress(card) }
                                                                     )
                                                                 }
                                                                 item { Spacer(modifier = Modifier.height(100.dp)) }
@@ -761,10 +773,10 @@ fun WalletScreen(
                                                             ExpressiveLoyaltyCardGrid(
                                                                 card = card,
                                                                 searchQuery = "",
-                                                                onClick = {
-                                                                    triggerHaptic()
-                                                                    viewModel.onCardClicked(card)
-                                                                }
+                                                                isSelectionMode = isSelectionMode,
+                                                                isSelected = selectedCardIds.contains(card.id),
+                                                                onClick = { onCardTap(card) },
+                                                                onLongClick = { onCardLongPress(card) }
                                                             )
                                                         }
                                                         item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
@@ -783,11 +795,252 @@ fun WalletScreen(
             }
         }
 
+        // Bottom Navigation Bar (Smoothly slides down out of view synchronously with FAB)
+        val navBarHideDistancePx = with(density) { 140.dp.toPx() }
+
+        val navBarOffsetProgress by animateFloatAsState(
+            targetValue = if (isSelectionMode) 1f else 0f,
+            animationSpec = tween(durationMillis = 340, easing = FastOutSlowInEasing),
+            label = "navBarOffset"
+        )
+
+        if (navBarOffsetProgress < 0.999f) {
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                tonalElevation = 0.dp,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .graphicsLayer {
+                        translationY = navBarOffsetProgress * navBarHideDistancePx
+                        alpha = (1f - navBarOffsetProgress).coerceIn(0f, 1f)
+                    }
+            ) {
+                NavigationBarItem(
+                    selected = currentNavTab == 0,
+                    onClick = {
+                        if (!isSelectionMode) {
+                            triggerHaptic()
+                            currentNavTab = 0
+                        }
+                    },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Rounded.AccountBalanceWallet,
+                            contentDescription = stringResource(R.string.all_cards_tab)
+                        )
+                    },
+                    label = {
+                        Text(
+                            text = stringResource(R.string.all_cards_tab),
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontFamily = InterFamily,
+                                fontWeight = if (currentNavTab == 0) FontWeight.Bold else FontWeight.Medium
+                            )
+                        )
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
+
+                NavigationBarItem(
+                    selected = currentNavTab == 1,
+                    onClick = {
+                        if (!isSelectionMode) {
+                            triggerHaptic()
+                            currentNavTab = 1
+                        }
+                    },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Rounded.Search,
+                            contentDescription = stringResource(R.string.search_tab)
+                        )
+                    },
+                    label = {
+                        Text(
+                            text = stringResource(R.string.search_tab),
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontFamily = InterFamily,
+                                fontWeight = if (currentNavTab == 1) FontWeight.Bold else FontWeight.Medium
+                            )
+                        )
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
+            }
+        }
+
+        // Floating Selection Toolbar (Positioned at bottom of screen where NavBar was)
+        AnimatedVisibility(
+            visible = isSelectionMode,
+            enter = slideInVertically(
+                initialOffsetY = { it },
+                animationSpec = tween(340, easing = FastOutSlowInEasing)
+            ) + fadeIn(tween(240, easing = FastOutSlowInEasing)),
+            exit = slideOutVertically(
+                targetOffsetY = { it },
+                animationSpec = tween(340, easing = FastOutSlowInEasing)
+            ) + fadeOut(tween(200, easing = FastOutSlowInEasing)),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(start = windowSizeInfo.horizontalPadding, end = windowSizeInfo.horizontalPadding, bottom = 16.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 600.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Left Pill Container: Match CardDetailSheet style (height 68.dp, PillShape, secondaryContainer 0.75 alpha)
+                Surface(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(68.dp),
+                    shape = PillShape,
+                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.75f),
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    tonalElevation = 1.dp
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(start = 10.dp, end = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Left: Cancel [X]
+                        IconButton(
+                            onClick = {
+                                hapticHelper.performClick()
+                                selectedCardIds.clear()
+                                isSelectionActive = false
+                            },
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Close,
+                                contentDescription = stringResource(R.string.cancel_action),
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+
+                        // Center: "Выбрано: N" / "Selected: N" (Optimized font size and clear weight for full number visibility)
+                        Box(
+                            modifier = Modifier.weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = stringResource(R.string.selected_count, selectedCardIds.size),
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontFamily = OnestFamily,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.5.sp,
+                                    letterSpacing = 0.sp
+                                ),
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
+
+                        // Right Actions: Select All, Share
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            val isAllSelected = selectedCardIds.size == uiState.allCards.size && uiState.allCards.isNotEmpty()
+                            IconButton(
+                                onClick = {
+                                    hapticHelper.performClick()
+                                    if (isAllSelected) {
+                                        selectedCardIds.clear()
+                                    } else {
+                                        selectedCardIds.clear()
+                                        selectedCardIds.addAll(uiState.allCards.map { it.id })
+                                    }
+                                },
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isAllSelected) Icons.Rounded.Deselect else Icons.Rounded.SelectAll,
+                                    contentDescription = if (isAllSelected) stringResource(R.string.deselect_all_action) else stringResource(R.string.select_all_action),
+                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+
+                            val hasSelection = selectedCardIds.isNotEmpty()
+                            IconButton(
+                                onClick = {
+                                    if (hasSelection) {
+                                        hapticHelper.performClick()
+                                        showShareBundleBottomSheet = true
+                                    }
+                                },
+                                enabled = hasSelection,
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Share,
+                                    contentDescription = stringResource(R.string.share_action),
+                                    tint = if (hasSelection) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.38f),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Right Dedicated Delete Button: Match CardDetailSheet style (68.dp, RoundedCornerShape(24.dp))
+                val hasSelection = selectedCardIds.isNotEmpty()
+                Surface(
+                    onClick = {
+                        if (hasSelection) {
+                            hapticHelper.performDestructiveWarning()
+                            showDeleteSelectedDialog = true
+                        }
+                    },
+                    enabled = hasSelection,
+                    modifier = Modifier.size(68.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    color = if (hasSelection) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.75f),
+                    contentColor = if (hasSelection) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.38f),
+                    tonalElevation = 2.dp
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Delete,
+                            contentDescription = stringResource(R.string.delete_action),
+                            tint = if (hasSelection) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.38f),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Speed Dial FAB (Anchored to bottom-end and smoothly hidden in selection mode)
         if (currentNavTab == 0) {
-            // Expandable Speed Dial FAB Menu (Anchored at Root Level - Dims Entire Window including Top and Bottom Bars)
             M3ExpressiveSpeedDialFab(
                 onScanClick = onNavigateToScanner,
                 onManualClick = onNavigateToAddCard,
+                isVisible = !isSelectionMode,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .navigationBarsPadding()
@@ -880,6 +1133,214 @@ fun WalletScreen(
                 viewModel.setLayoutMode(mode, context)
             },
             onDismiss = { showSortBottomSheet = false }
+        )
+    }
+
+    if (showShareBundleBottomSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showShareBundleBottomSheet = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            shape = BottomSheetTopShape,
+            containerColor = if (isDark) MaterialTheme.colorScheme.surfaceContainer else MaterialTheme.colorScheme.surfaceContainerLow,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            dragHandle = {
+                BottomSheetDefaults.DragHandle(
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
+            }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentWidth(Alignment.CenterHorizontally)
+                    .widthIn(max = 620.dp)
+                    .padding(horizontal = 20.dp)
+                    .padding(top = 4.dp, bottom = 32.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.share_bundle_dialog_title),
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontFamily = OnestFamily,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 24.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    // Option 1: Link
+                    Surface(
+                        onClick = {
+                            hapticHelper.performClick()
+                            showShareBundleBottomSheet = false
+                            val selectedCardsList = uiState.allCards.filter { it.id in selectedCardIds }
+                            val link = com.cardify.app.domain.util.CardDeepLinkHelper.createBundleDeepLink(selectedCardsList)
+                            val sendIntent = android.content.Intent().apply {
+                                action = android.content.Intent.ACTION_SEND
+                                putExtra(android.content.Intent.EXTRA_TEXT, link)
+                                type = "text/plain"
+                            }
+                            context.startActivity(android.content.Intent.createChooser(sendIntent, context.getString(R.string.share_bundle_dialog_title)))
+                        },
+                        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 6.dp, bottomEnd = 6.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Link,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.share_bundle_link_option),
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontFamily = OnestFamily,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp
+                                    )
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = stringResource(R.string.share_bundle_link_subtitle),
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.5.sp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Rounded.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            )
+                        }
+                    }
+
+                    // Option 2: JSON
+                    Surface(
+                        onClick = {
+                            hapticHelper.performClick()
+                            showShareBundleBottomSheet = false
+                            val fileName = "cardify_selected_${System.currentTimeMillis() / 1000}.json"
+                            exportSelectedJsonLauncher.launch(fileName)
+                        },
+                        shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp, bottomStart = 24.dp, bottomEnd = 24.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.FileDownload,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.share_bundle_json_option),
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontFamily = OnestFamily,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp
+                                    )
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = stringResource(R.string.share_bundle_json_subtitle),
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.5.sp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Rounded.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showDeleteSelectedDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteSelectedDialog = false },
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            shape = RoundedCornerShape(24.dp),
+            title = {
+                Text(
+                    text = stringResource(R.string.delete_selected_dialog_title),
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = OnestFamily,
+                    fontSize = 20.sp
+                )
+            },
+            text = {
+                Text(
+                    text = stringResource(R.string.delete_selected_dialog_desc, selectedCardIds.size),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        hapticHelper.performClick()
+                        viewModel.deleteCards(selectedCardIds.toList())
+                        selectedCardIds.clear()
+                        isSelectionActive = false
+                        showDeleteSelectedDialog = false
+                    },
+                    shape = PillShape,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFD32F2F),
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text(stringResource(R.string.delete_action))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDeleteSelectedDialog = false },
+                    shape = PillShape
+                ) {
+                    Text(stringResource(R.string.cancel_action))
+                }
+            }
         )
     }
 }

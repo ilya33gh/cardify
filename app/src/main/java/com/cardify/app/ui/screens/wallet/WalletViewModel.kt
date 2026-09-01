@@ -252,6 +252,23 @@ class WalletViewModel(
         }
     }
 
+    fun deleteCards(cardIds: List<Long>) {
+        if (cardIds.isEmpty()) return
+        viewModelScope.launch {
+            cardRepository.deleteCards(cardIds)
+            if (_selectedCardForDetail.value?.id in cardIds) {
+                _selectedCardForDetail.value = null
+            }
+        }
+    }
+
+    fun batchImportCards(cards: List<com.cardify.app.domain.util.SharedCardPayload>) {
+        if (cards.isEmpty()) return
+        viewModelScope.launch {
+            cardRepository.batchImportCards(cards)
+        }
+    }
+
     class Factory(
         private val cardRepository: CardRepository,
         private val categoryRepository: CategoryRepository

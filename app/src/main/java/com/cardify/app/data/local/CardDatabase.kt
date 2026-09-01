@@ -88,14 +88,14 @@ abstract class CardDatabase : RoomDatabase() {
 
         suspend fun populateDefaultCategories(dao: CategoryDao) {
             val defaultCategories = listOf(
-                CategoryEntity(name = "Supermarkets", iconName = "shopping_cart", colorHex = "#1E88E5", orderIndex = 0),
-                CategoryEntity(name = "Clothing & Shoes", iconName = "checkroom", colorHex = "#E91E63", orderIndex = 1),
-                CategoryEntity(name = "Pharmacy & Health", iconName = "local_pharmacy", colorHex = "#00897B", orderIndex = 2),
-                CategoryEntity(name = "Gas & Auto", iconName = "local_gas_station", colorHex = "#FB8C00", orderIndex = 3),
-                CategoryEntity(name = "Restaurants & Cafes", iconName = "restaurant", colorHex = "#8E24AA", orderIndex = 4),
-                CategoryEntity(name = "Electronics", iconName = "devices", colorHex = "#3949AB", orderIndex = 5),
-                CategoryEntity(name = "Entertainment", iconName = "sports_esports", colorHex = "#D81B60", orderIndex = 6),
-                CategoryEntity(name = "Other", iconName = "folder", colorHex = "#546E7A", orderIndex = 7)
+                CategoryEntity(name = "Supermarkets", iconName = "shopping_cart", colorHex = "blue", orderIndex = 0),
+                CategoryEntity(name = "Clothing & Shoes", iconName = "checkroom", colorHex = "pink", orderIndex = 1),
+                CategoryEntity(name = "Pharmacy & Health", iconName = "local_pharmacy", colorHex = "emerald", orderIndex = 2),
+                CategoryEntity(name = "Gas & Auto", iconName = "local_gas_station", colorHex = "orange", orderIndex = 3),
+                CategoryEntity(name = "Restaurants & Cafes", iconName = "restaurant", colorHex = "purple", orderIndex = 4),
+                CategoryEntity(name = "Electronics", iconName = "devices", colorHex = "indigo", orderIndex = 5),
+                CategoryEntity(name = "Entertainment", iconName = "sports_esports", colorHex = "red", orderIndex = 6),
+                CategoryEntity(name = "Other", iconName = "folder", colorHex = "graphite", orderIndex = 7)
             )
             dao.insertCategories(defaultCategories)
         }

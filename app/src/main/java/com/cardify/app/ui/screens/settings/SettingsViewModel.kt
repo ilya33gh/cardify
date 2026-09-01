@@ -178,12 +178,36 @@ class SettingsViewModel(
         }
     }
 
+    suspend fun generateAllCardsDeepLink(): String? = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        val cards = backupRepository.getAllCards()
+        if (cards.isEmpty()) null else com.cardify.app.domain.util.CardDeepLinkHelper.createBundleDeepLink(cards)
+    }
+
     fun importBackup(uri: Uri) {
         viewModelScope.launch {
             _isImporting.value = true
             val result = backupRepository.importFromJson(uri)
             _isImporting.value = false
             _message.value = if (result.isSuccess) "Импортировано карт: ${result.getOrNull()}" else "Ошибка импорта: ${result.exceptionOrNull()?.message}"
+        }
+    }
+
+    fun importCatimaBackup(uri: Uri) {
+        viewModelScope.launch {
+            _isImporting.value = true
+            val result = backupRepository.importFromCatima(uri)
+            _isImporting.value = false
+            _message.value = if (result.isSuccess) "Импортировано из Catima карт: ${result.getOrNull()}" else "Ошибка импорта Catima: ${result.exceptionOrNull()?.message}"
+        }
+    }
+
+    fun batchImportCards(cards: List<com.cardify.app.domain.util.SharedCardPayload>) {
+        if (cards.isEmpty()) return
+        viewModelScope.launch {
+            _isImporting.value = true
+            val count = backupRepository.batchImportCards(cards)
+            _isImporting.value = false
+            _message.value = "Импортировано карт: $count"
         }
     }
 
