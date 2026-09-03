@@ -9,6 +9,11 @@ android {
     namespace = "com.cardify.app"
     compileSdk = 35
 
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
+
     defaultConfig {
         applicationId = "com.cardify.app"
         minSdk = 26
